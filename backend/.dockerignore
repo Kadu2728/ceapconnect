@@ -1,0 +1,35 @@
+# --- Ambiente virtual / cache Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Env / segredos ---
+.env
+.env.*
+!.env.example
+
+# --- Ferramentas de dev (não vão para a imagem de produção) ---
+requirements-dev.txt
+pyproject.toml
+.lintstagedrc.json
+lint-staged.config.mjs
+
+# --- VCS / IDE ---
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+
+# --- Docker ---
+Dockerfile
+.dockerignore
+
+# --- Misc ---
+*.log
+.DS_Store

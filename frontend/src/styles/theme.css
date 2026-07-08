@@ -1,0 +1,109 @@
+/**
+ * Design tokens — CEAP Connect
+ *
+ * Paleta derivada da identidade visual real do CEAP — Centro Educacional
+ * Assistencial Profissionalizante (São Paulo/SP): azul como cor primária
+ * (confiança, instituição de ~40 anos) e um verde de crescimento como cor de
+ * progresso/gamificação — usado em XP, conquistas, jornada e barras de
+ * progresso, nunca como mera decoração. Roxo e laranja compõem a marca
+ * (cluster de círculos do logo) e aparecem em acentos pontuais.
+ *
+ * Cores semânticas de feedback (success/warning/destructive) permanecem
+ * reservadas ao seu significado. Todas as combinações texto/fundo respeitam
+ * contraste mínimo AA (4.5:1).
+ */
+
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.16 0.02 250);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.16 0.02 250);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.16 0.02 250);
+
+  /* Azul institucional do CEAP */
+  --primary: oklch(0.5 0.14 248);
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.97 0.008 250);
+  --secondary-foreground: oklch(0.24 0.03 250);
+
+  --muted: oklch(0.97 0.006 250);
+  --muted-foreground: oklch(0.48 0.02 250);
+
+  --accent: oklch(0.95 0.028 245);
+  --accent-foreground: oklch(0.28 0.06 248);
+
+  --destructive: oklch(0.58 0.24 27);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Verde de crescimento CEAP — progresso e conquistas */
+  --success: oklch(0.58 0.14 148);
+  --success-foreground: oklch(0.99 0 0);
+
+  --warning: oklch(0.75 0.15 85);
+  --warning-foreground: oklch(0.2 0 0);
+
+  --border: oklch(0.9 0.01 250);
+  --input: oklch(0.9 0.01 250);
+  --ring: oklch(0.5 0.14 248 / 0.5);
+
+  /* Tokens de marca (gradientes, glows, destaques e o cluster do logo) */
+  --brand: oklch(0.5 0.14 248);
+  --brand-strong: oklch(0.41 0.13 250);
+  --brand-2: oklch(0.7 0.14 235);
+  --brand-green: oklch(0.63 0.15 148);
+  --brand-green-foreground: oklch(0.99 0 0);
+  --brand-purple: oklch(0.5 0.16 295);
+  --brand-orange: oklch(0.7 0.16 55);
+  --brand-foreground: oklch(0.99 0 0);
+}
+
+.dark {
+  --background: oklch(0.16 0.015 250);
+  --foreground: oklch(0.98 0 0);
+
+  --card: oklch(0.2 0.018 250);
+  --card-foreground: oklch(0.98 0 0);
+
+  --popover: oklch(0.2 0.018 250);
+  --popover-foreground: oklch(0.98 0 0);
+
+  --primary: oklch(0.72 0.13 242);
+  --primary-foreground: oklch(0.17 0.02 250);
+
+  --secondary: oklch(0.27 0.02 250);
+  --secondary-foreground: oklch(0.98 0 0);
+
+  --muted: oklch(0.27 0.02 250);
+  --muted-foreground: oklch(0.72 0.02 250);
+
+  --accent: oklch(0.29 0.04 245);
+  --accent-foreground: oklch(0.98 0 0);
+
+  --destructive: oklch(0.7 0.19 22);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --success: oklch(0.72 0.15 148);
+  --success-foreground: oklch(0.16 0.02 250);
+
+  --warning: oklch(0.8 0.15 85);
+  --warning-foreground: oklch(0.16 0.02 250);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.72 0.13 242 / 0.5);
+
+  --brand: oklch(0.72 0.13 242);
+  --brand-strong: oklch(0.58 0.13 245);
+  --brand-2: oklch(0.75 0.13 233);
+  --brand-green: oklch(0.74 0.16 148);
+  --brand-green-foreground: oklch(0.16 0.02 250);
+  --brand-purple: oklch(0.7 0.14 293);
+  --brand-orange: oklch(0.76 0.15 58);
+  --brand-foreground: oklch(0.16 0.02 250);
+}

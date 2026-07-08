@@ -1,0 +1,41 @@
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle (erros)
+  "F",  # pyflakes
+  "I",  # isort (organização de imports)
+  "UP", # pyupgrade (sintaxe moderna do Python)
+  "B",  # flake8-bugbear (bugs comuns e más práticas)
+]
+ignore = [
+  # Pydantic ainda recomenda `Generic[T]` + `TypeVar` para BaseModel genérico
+  # (suporte mais maduro em ferramentas/mypy do que a nova sintaxe `class Foo[T]`
+  # do PEP 695). Ver app/schemas/response.py.
+  "UP046",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+# Migrations geradas por `alembic revision --autogenerate` não são
+# reformatadas manualmente linha a linha — o conteúdo é gerado e revisado
+# como um todo (schema x model), não como prosa de código de aplicação.
+"alembic/versions/*.py" = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Permite os "chamadas em argumento default" idiomáticas do FastAPI
+# (Depends, Query, Path, Body, Header, Cookie, Security), que são o padrão
+# recomendado pelo próprio framework e não representam o bug que B008 previne.
+extend-immutable-calls = [
+  "fastapi.Depends",
+  "fastapi.Query",
+  "fastapi.Path",
+  "fastapi.Body",
+  "fastapi.Header",
+  "fastapi.Cookie",
+  "fastapi.Security",
+]

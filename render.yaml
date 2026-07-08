@@ -1,0 +1,59 @@
+# =============================================================================
+# Render Blueprint — CEAP Connect API (backend FastAPI)
+#
+# Como usar:
+#   1. Faça push deste repositório para o GitHub.
+#   2. No Render: New + → "Blueprint" → conecte o repositório.
+#   3. O Render lê este arquivo e cria o Web Service automaticamente.
+#   4. Preencha as variáveis marcadas com `sync: false` (segredos) no painel.
+#
+# O deploy usa a imagem Docker em `backend/Dockerfile`, cujo CMD roda
+# `alembic upgrade head` antes de subir o Uvicorn — as migrations são
+# aplicadas a cada deploy, mantendo o schema sempre em sincronia.
+# =============================================================================
+services:
+  - type: web
+    name: ceap-connect-api
+    runtime: docker
+    # Contexto e Dockerfile relativos à raiz do repositório.
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
+    region: oregon
+    # O Render injeta $PORT; o CMD do Dockerfile já o respeita.
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      # --- App ---
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: UVICORN_WORKERS
+        value: "2"
+
+      # --- Database (Neon) ---
+      # Cole a connection string assíncrona do Neon no painel do Render:
+      #   postgresql+asyncpg://<user>:<password>@<host>/<db>
+      # (sem sslmode/channel_binding na URL — o TLS é ativado via DATABASE_SSL)
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+
+      # --- JWT ---
+      # Gerado automaticamente pelo Render (segredo forte, não versionado).
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+
+      # --- CORS ---
+      # Após o deploy do frontend, defina aqui o domínio da Vercel, ex.:
+      #   https://ceap-connect.vercel.app
+      - key: CORS_ORIGINS
+        sync: false

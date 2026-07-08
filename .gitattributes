@@ -1,0 +1,10 @@
+# Normaliza terminadores de linha no repositório. Sem isso, o Git no Windows
+# (com core.autocrlf=true) pode converter scripts para CRLF, o que quebra o
+# hook do Husky (executado via `sh -e`) e qualquer script rodando dentro de
+# containers Linux (Docker).
+* text=auto eol=lf
+
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.py text eol=lf
+.husky/* text eol=lf

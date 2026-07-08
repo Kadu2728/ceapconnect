@@ -1,0 +1,4 @@
+# `--concurrent 1` serializa as tarefas: rodar múltiplos ESLint/Ruff em
+# paralelo estoura a memória em máquinas mais limitadas (SIGKILL). O custo é
+# um pre-commit um pouco mais lento, em troca de robustez.
+npx lint-staged --concurrent 1

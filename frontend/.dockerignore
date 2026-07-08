@@ -1,0 +1,32 @@
+# --- Dependências / build ---
+node_modules/
+.next/
+out/
+build/
+.turbo/
+*.tsbuildinfo
+
+# --- Env / segredos ---
+.env
+.env.*
+!.env.example
+
+# --- Ferramentas de dev (não necessárias na imagem) ---
+.lintstagedrc.json
+
+# --- VCS / IDE ---
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+
+# --- Docker ---
+Dockerfile
+.dockerignore
+
+# --- Misc ---
+*.log
+.DS_Store
+coverage/
+README.md

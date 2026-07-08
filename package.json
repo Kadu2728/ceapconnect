@@ -1,0 +1,13 @@
+{
+  "name": "ceap-connect",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Orquestração de tooling do monorepo CEAP Connect (husky + lint-staged). Não é uma aplicação publicável — frontend e backend mantêm seus próprios gerenciadores de dependências (npm e pip, respectivamente).",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8"
+  }
+}

@@ -1,0 +1,8 @@
+# Dependências de desenvolvimento (lint/format).
+# Instalação: pip install -r requirements-dev.txt
+# (instala requirements.txt + as ferramentas abaixo; nunca incluído na imagem
+# Docker de produção — ver backend/Dockerfile).
+-r requirements.txt
+
+# --- Lint & format (usado pelo pre-commit hook e no CI) ---
+ruff==0.15.20

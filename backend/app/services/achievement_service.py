@@ -1,0 +1,101 @@
+"""Regra de negócio de Conquistas (EPIC 06).
+
+Duas responsabilidades:
+
+1. Listar o catálogo de conquistas com o status (desbloqueada ou não) do
+   candidato — consumido por `GET /api/v1/achievements`.
+2. Avaliar e desbloquear conquistas como efeito colateral da conclusão de uma
+   missão — chamado por `mission_service`, dentro da mesma transação.
+
+As regras referenciam as conquistas do catálogo pelo nome (chave natural do
+seed). Se uma conquista esperada não existir (catálogo não semeado), a regra
+simplesmente não desbloqueia nada, em vez de quebrar.
+"""
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.achievement import Achievement
+from app.models.candidate_profile import CandidateProfile
+from app.models.user import User
+from app.repositories.achievement_repository import AchievementRepository
+from app.schemas.achievement import (
+    AchievementItem,
+    AchievementListResponse,
+    AchievementSummary,
+)
+from app.services.candidate_profile_service import get_profile_or_raise
+
+_ACHIEVEMENT_FIRST_MISSION = "Primeira Missão"
+_ACHIEVEMENT_100_XP = "100 XP"
+_XP_MILESTONE = 100
+
+
+async def list_achievements(db: AsyncSession, user: User) -> AchievementListResponse:
+    """Retorna o catálogo de conquistas com o status de desbloqueio do candidato."""
+    profile = await get_profile_or_raise(db, user)
+    rows = await AchievementRepository(db).list_all_with_status_for_profile(profile.id)
+
+    items = [
+        AchievementItem(
+            id=achievement.id,
+            name=achievement.name,
+            description=achievement.description,
+            icon=achievement.icon,
+            unlocked=candidate_achievement is not None,
+            unlocked_at=(
+                candidate_achievement.unlocked_at if candidate_achievement is not None else None
+            ),
+        )
+        for achievement, candidate_achievement in rows
+    ]
+
+    unlocked = sum(1 for item in items if item.unlocked)
+    return AchievementListResponse(
+        achievements=items,
+        summary=AchievementSummary(total=len(items), unlocked=unlocked),
+    )
+
+
+async def evaluate_mission_achievements(
+    db: AsyncSession,
+    profile: CandidateProfile,
+    *,
+    completed_missions: int,
+    xp_total: int,
+) -> list[Achievement]:
+    """Desbloqueia as conquistas cujas condições foram atingidas. Não commita.
+
+    Idempotente: conquistas já desbloqueadas não são registradas de novo.
+    """
+    repo = AchievementRepository(db)
+    newly_unlocked: list[Achievement] = []
+
+    if completed_missions >= 1:
+        unlocked = await _unlock_if_absent(repo, profile, _ACHIEVEMENT_FIRST_MISSION)
+        if unlocked is not None:
+            newly_unlocked.append(unlocked)
+
+    if xp_total >= _XP_MILESTONE:
+        unlocked = await _unlock_if_absent(repo, profile, _ACHIEVEMENT_100_XP)
+        if unlocked is not None:
+            newly_unlocked.append(unlocked)
+
+    return newly_unlocked
+
+
+async def _unlock_if_absent(
+    repo: AchievementRepository, profile: CandidateProfile, name: str
+) -> Achievement | None:
+    """Desbloqueia a conquista de nome `name` se existir e ainda não estiver desbloqueada."""
+    achievement = await repo.get_by_name(name)
+    if achievement is None:
+        return None
+
+    already = await repo.has_for_profile(
+        candidate_profile_id=profile.id, achievement_id=achievement.id
+    )
+    if already:
+        return None
+
+    await repo.unlock(candidate_profile_id=profile.id, achievement_id=achievement.id)
+    return achievement

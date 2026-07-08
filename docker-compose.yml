@@ -1,0 +1,89 @@
+# Ambiente de desenvolvimento local completo do CEAP Connect: Postgres +
+# backend (FastAPI) + frontend (Next.js).
+#
+# Uso:
+#   1. cp .env.example .env   (e preencha os valores)
+#   2. docker compose up --build
+#
+# O frontend fica em http://localhost:3000 e a API em http://localhost:8000
+# (ambos ajustáveis via FRONTEND_PORT/BACKEND_PORT no .env).
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ceap_connect_pgdata:/var/lib/postgresql/data
+    ports:
+      # Exposto no host apenas por conveniência (psql, DBeaver etc.). O
+      # backend nunca usa esta porta — ele fala com o serviço "db" pela rede
+      # interna do compose, sempre na porta 5432.
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - ceap_connect_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-false}
+      # Host "db" e porta 5432 se referem sempre ao serviço/porta *internos*
+      # do compose (nomes de serviço resolvem via DNS interno da rede
+      # ceap_connect_network) — nunca ao POSTGRES_PORT mapeado no host acima.
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      PORT: 8000
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - ceap_connect_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_API_URL precisa ser resolvível pelo NAVEGADOR do
+        # usuário (roda fora da rede do compose), por isso é sempre a URL
+        # pública do backend (ex.: http://localhost:8000 em dev), nunca o
+        # hostname interno "backend". É inlinada no bundle em build-time.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      PORT: 3000
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - ceap_connect_network
+
+networks:
+  ceap_connect_network:
+    driver: bridge
+
+volumes:
+  ceap_connect_pgdata:
+    name: ceap_connect_pgdata

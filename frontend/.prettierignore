@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+build
+coverage
+.env*
+!.env.example
+
+# O Next.js reescreve este arquivo automaticamente (em seu próprio estilo de
+# formatação) sempre que roda `next dev`/`next build`, sobrescrevendo o
+# estilo do Prettier. Ignorá-lo aqui evita falsos-positivos no
+# `format:check` (e no hook de pre-commit) causados por essa reescrita
+# automática, sem relação com nenhuma mudança de estilo real do time.
+tsconfig.json
