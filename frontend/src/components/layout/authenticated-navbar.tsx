@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { CeapLogo } from "@/components/brand/ceap-logo";
-import { AUTH_NAV_ITEMS } from "@/components/layout/authenticated-nav-items";
+import { visibleNavItems } from "@/components/layout/authenticated-nav-items";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { APP_CONTAINER_CLASS } from "@/lib/layout";
 import { getInitials } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,8 @@ export function AuthenticatedNavbar({
   onLogout,
 }: AuthenticatedNavbarProps) {
   const pathname = usePathname();
+  const isAdmin = useAuthStore((state) => state.user?.is_admin ?? false);
+  const navItems = visibleNavItems(isAdmin);
   const initials = getInitials(userName);
   const hasUnread = unreadNotificationsCount > 0;
 
@@ -51,7 +54,7 @@ export function AuthenticatedNavbar({
           aria-label="Navegação principal"
           className="hidden items-center gap-1 md:flex"
         >
-          {AUTH_NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
@@ -61,8 +64,8 @@ export function AuthenticatedNavbar({
                 className={cn(
                   "rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-brand/10 text-brand"
+                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                 )}
               >
                 {item.label}

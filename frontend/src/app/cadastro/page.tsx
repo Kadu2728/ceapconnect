@@ -22,8 +22,16 @@ export default function CadastroPage() {
     <div className="flex min-h-svh flex-col">
       <Navbar authLink="login" />
 
-      <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md">
+      <main className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-12 sm:px-6 lg:px-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 left-1/2 size-[32rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-32 left-0 size-[28rem] rounded-full bg-brand-purple/10 blur-3xl"
+        />
+        <div className="relative w-full max-w-md">
           <AuthCard
             title="Comece sua jornada"
             description="Crie sua conta para acompanhar o processo seletivo do CEAP."

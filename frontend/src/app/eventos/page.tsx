@@ -30,6 +30,7 @@ export default function EventosPage() {
       unreadNotificationsCount={unreadNotificationsCount}
     >
       <PageHeader
+        eyebrow="Agenda"
         title="Eventos"
         description="Participe de palestras, encontros e simulados. Inscreva-se e receba os lembretes."
       />

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { AuthenticatedNavbar } from "@/components/layout/authenticated-navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { AssistantWidget } from "@/features/assistant/components/assistant-widget";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +54,7 @@ export function AuthenticatedShell({
       </main>
 
       <BottomNav />
+      <AssistantWidget />
     </div>
   );
 }

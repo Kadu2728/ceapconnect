@@ -7,9 +7,11 @@ import { ExamCountdown } from "@/features/dashboard/components/exam-countdown";
 import { Greeting } from "@/features/dashboard/components/greeting";
 import { JourneyProgress } from "@/features/dashboard/components/journey-progress";
 import { NextMissionCard } from "@/features/dashboard/components/next-mission-card";
+import { NextRewardCard } from "@/features/dashboard/components/next-reward-card";
 import { UpcomingEventsList } from "@/features/dashboard/components/upcoming-events-list";
 import { XpBadge } from "@/features/dashboard/components/xp-badge";
 import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
+import { LevelHeader } from "@/features/rewards/components/level-header";
 import {
   getStaggerContainerVariants,
   getStaggerItemVariants,
@@ -49,6 +51,10 @@ export function DashboardContent({ data }: DashboardContentProps) {
       </motion.div>
 
       <motion.div variants={itemVariants}>
+        <LevelHeader level={data.level} />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
         <ExamCountdown examDate={data.exam_date} />
       </motion.div>
 
@@ -59,6 +65,9 @@ export function DashboardContent({ data }: DashboardContentProps) {
           </motion.div>
           <motion.div variants={itemVariants}>
             <NextMissionCard mission={data.next_mission} />
+          </motion.div>
+          <motion.div variants={itemVariants}>
+            <NextRewardCard reward={data.next_reward} />
           </motion.div>
         </div>
 

@@ -49,6 +49,23 @@ class Settings(BaseSettings):
     # --- CORS ---
     cors_origins: str = "http://localhost:3000"
 
+    # --- Assistente IA (EPIC 11 — Groq, nível gratuito) ---
+    groq_api_key: str = Field(
+        default="",
+        description=(
+            "Chave da API do Groq (console.groq.com — gratuita, sem cartão; começa "
+            "com 'gsk_'). Vazio = assistente responde 'não configurado'."
+        ),
+    )
+    groq_model: str = Field(
+        default="llama-3.3-70b-versatile",
+        description="Modelo do Groq usado pelo assistente (nível gratuito).",
+    )
+    assistant_max_tokens: int = Field(
+        default=1024,
+        description="Limite de tokens da resposta do assistente por mensagem.",
+    )
+
     # --- Candidate journey (EPIC 03) ---
     default_exam_offset_days: int = Field(
         default=75,

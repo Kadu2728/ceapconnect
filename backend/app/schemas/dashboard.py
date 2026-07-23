@@ -11,6 +11,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.gamification import LevelInfo
+
 JourneyStepStatus = Literal["completed", "current", "pending"]
 
 
@@ -61,14 +63,32 @@ class UpcomingEvent(BaseModel):
     location: str
 
 
+class NextReward(BaseModel):
+    """Recompensa em destaque no Dashboard (a "próxima" a mirar ou resgatar)."""
+
+    id: uuid.UUID
+    title: str
+    provider: str
+    icon: str
+    # available = já desbloqueada (pode resgatar agora); locked = ainda a conquistar.
+    status: Literal["available", "locked"]
+    requirement_label: str
+
+
 class DashboardResponse(BaseModel):
     """Dado agregado retornado por `GET /api/v1/dashboard`."""
 
     greeting_name: str
     journey: JourneyProgress
     xp_total: int
+    # Nível atual do candidato e progresso rumo ao próximo (gamificação — EPIC 13).
+    level: LevelInfo
+    # Recompensa em destaque (a resgatar ou a mirar); None se não houver.
+    next_reward: NextReward | None
     next_mission: NextMission | None
     recent_achievements: list[RecentAchievement]
     upcoming_events: list[UpcomingEvent]
     unread_notifications_count: int
     exam_date: date | None
+    # False = candidato ainda não viu a tela de boas-vindas (primeiro login).
+    onboarded: bool

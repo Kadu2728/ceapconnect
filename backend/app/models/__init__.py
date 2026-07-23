@@ -8,23 +8,29 @@ autogenerate quanto para conferência manual das migrations).
 from app.models.achievement import Achievement
 from app.models.candidate_achievement import CandidateAchievement
 from app.models.candidate_profile import CandidateProfile
+from app.models.chat_message import ChatMessage
 from app.models.event import Event
 from app.models.event_registration import EventRegistration
 from app.models.journey_step import JourneyStep
 from app.models.mission import Mission
 from app.models.mission_progress import MissionProgress
 from app.models.notification import Notification
+from app.models.reward import Reward
+from app.models.reward_redemption import RewardRedemption
 from app.models.user import User
 
 __all__ = [
     "Achievement",
     "CandidateAchievement",
     "CandidateProfile",
+    "ChatMessage",
     "Event",
     "EventRegistration",
     "JourneyStep",
     "Mission",
     "MissionProgress",
     "Notification",
+    "Reward",
+    "RewardRedemption",
     "User",
 ]

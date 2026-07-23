@@ -10,7 +10,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.exceptions import UnauthorizedException
+from app.core.exceptions import ForbiddenException, UnauthorizedException
 from app.models.user import User
 from app.services import auth_service
 
@@ -32,3 +32,14 @@ async def get_current_user(
         raise UnauthorizedException("Não autenticado.")
 
     return await auth_service.get_current_user(db, credentials.credentials)
+
+
+async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Garante que o usuário autenticado é administrador.
+
+    Usar como `Depends(get_current_admin)` nas rotas do painel admin. Levanta
+    `ForbiddenException` (403) para usuários autenticados sem `is_admin`.
+    """
+    if not current_user.is_admin:
+        raise ForbiddenException("Acesso restrito a administradores.")
+    return current_user

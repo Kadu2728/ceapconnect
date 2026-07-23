@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react";
+import { Gift, Lock } from "lucide-react";
 import { createElement } from "react";
 
 import { Card } from "@/components/ui/card";
@@ -27,7 +27,12 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
   const { unlocked, unlocked_at: unlockedAt } = achievement;
 
   return (
-    <Card className={cn("h-full gap-3 text-center", !unlocked && "opacity-70")}>
+    <Card
+      className={cn(
+        "h-full gap-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+        !unlocked && "opacity-70",
+      )}
+    >
       <div className="flex flex-col items-center gap-3 px-6">
         <span
           className={cn(
@@ -64,6 +69,18 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
             ? `Desbloqueada em ${formatDate(unlockedAt)}`
             : "Ainda não desbloqueada"}
         </span>
+
+        {achievement.reward ? (
+          <span
+            className={cn(
+              "mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium",
+              unlocked ? "bg-brand/10 text-brand" : "bg-muted text-muted-foreground",
+            )}
+          >
+            <Gift className="size-3.5" aria-hidden="true" />
+            Recompensa: {achievement.reward.title}
+          </span>
+        ) : null}
       </div>
     </Card>
   );

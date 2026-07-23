@@ -6,9 +6,9 @@ nunca via endpoint dedicado nesta fase.
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Date, ForeignKey, Integer, String
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -46,6 +46,9 @@ class CandidateProfile(Base, TimestampMixin, SoftDeleteMixin):
         default=_DEFAULT_JOURNEY_STEP_KEY,
         nullable=False,
     )
+    # Quando o candidato concluiu a tela de boas-vindas (onboarding do primeiro
+    # login, USER_FLOW.md). `None` = ainda não viu — mostrar o onboarding.
+    onboarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     def __repr__(self) -> str:
         return f"<CandidateProfile id={self.id} user_id={self.user_id}>"

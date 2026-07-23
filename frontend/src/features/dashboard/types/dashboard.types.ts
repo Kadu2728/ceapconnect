@@ -44,13 +44,40 @@ export interface DashboardEvent {
   location: string;
 }
 
+/** Nível atual do candidato e progresso rumo ao próximo (gamificação — EPIC 13). */
+export interface DashboardLevel {
+  level: number;
+  name: string;
+  xp_total: number;
+  current_level_xp: number;
+  next_level_xp: number | null;
+  xp_into_level: number;
+  xp_to_next: number | null;
+  progress_percentage: number;
+  is_max_level: boolean;
+}
+
+/** Recompensa em destaque no Dashboard (a resgatar ou a mirar). */
+export interface DashboardNextReward {
+  id: string;
+  title: string;
+  provider: string;
+  /** Nome de ícone `lucide-react` (ver `rewards/utils/reward-icons.ts`). */
+  icon: string;
+  status: "available" | "locked";
+  requirement_label: string;
+}
+
 export interface DashboardData {
   greeting_name: string;
   journey: DashboardJourney;
   xp_total: number;
+  level: DashboardLevel;
+  next_reward: DashboardNextReward | null;
   next_mission: DashboardMission | null;
   recent_achievements: DashboardAchievement[];
   upcoming_events: DashboardEvent[];
   unread_notifications_count: number;
   exam_date: string | null;
+  onboarded: boolean;
 }

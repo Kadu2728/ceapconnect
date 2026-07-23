@@ -30,6 +30,7 @@ export default function ConquistasPage() {
       unreadNotificationsCount={unreadNotificationsCount}
     >
       <PageHeader
+        eyebrow="Sua evolução"
         title="Conquistas"
         description="Cada conquista marca uma etapa vencida. Desbloqueie todas ao longo da sua jornada."
       />

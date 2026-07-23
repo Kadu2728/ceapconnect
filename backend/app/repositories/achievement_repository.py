@@ -64,6 +64,20 @@ class AchievementRepository:
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def list_unlocked_ids_for_profile(
+        self, candidate_profile_id: uuid.UUID
+    ) -> set[uuid.UUID]:
+        """Ids das conquistas já desbloqueadas pelo candidato.
+
+        Usado pela feature de Recompensas para avaliar, sem N+1, se a condição
+        de desbloqueio (por conquista) de cada recompensa foi atingida.
+        """
+        stmt = select(CandidateAchievement.achievement_id).where(
+            CandidateAchievement.candidate_profile_id == candidate_profile_id
+        )
+        rows = (await self._db.execute(stmt)).scalars().all()
+        return set(rows)
+
     async def has_for_profile(
         self, *, candidate_profile_id: uuid.UUID, achievement_id: uuid.UUID
     ) -> bool:

@@ -38,6 +38,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  is_admin: boolean;
 }
 
 export interface LoginResponseData {

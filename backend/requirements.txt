@@ -21,3 +21,8 @@ passlib[bcrypt]==1.7.4
 # lib mantida (ex. bcrypt puro ou argon2-cffi) ou o passlib ser atualizado.
 bcrypt==4.0.1
 python-multipart==0.0.20
+
+# --- Assistente IA (EPIC 11) ---
+# Cliente HTTP assíncrono usado para consumir a API do Groq (nível gratuito,
+# compatível com OpenAI) em streaming (endpoint `chat/completions`, SSE).
+httpx==0.28.1

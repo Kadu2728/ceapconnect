@@ -28,7 +28,7 @@ export function EventCard({ event, onToggle, isPending }: EventCardProps) {
   const { registered } = event;
 
   return (
-    <Card className="gap-4">
+    <Card className="gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-md">
       <div className="flex flex-col gap-3 px-6">
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand capitalize">

@@ -25,6 +25,7 @@ from app.models.achievement import Achievement
 from app.models.event import Event
 from app.models.journey_step import JourneyStep
 from app.models.mission import Mission
+from app.models.reward import Reward
 
 logger = logging.getLogger("ceap_connect.seed")
 logging.basicConfig(level=logging.INFO)
@@ -114,6 +115,120 @@ _ACHIEVEMENTS: tuple[dict, ...] = (
 )
 
 
+# Recompensas reais (cursos/certificações externas). As duas primeiras são
+# desbloqueadas por CONQUISTA (o "conclua a conquista → ganhe o curso" pedido
+# pela direção); as demais, por NÍVEL. `required_achievement_name` é resolvido
+# para o id da conquista no momento do seed. Ajuste esta lista para o que o CEAP
+# de fato oferecer — desativar sem apagar: `is_active=False`.
+_REWARDS: tuple[dict, ...] = (
+    {
+        "title": "Pacote Office na prática",
+        "description": (
+            "Curso completo de Word, Excel e PowerPoint para dar seus primeiros "
+            "passos no mundo profissional — 100% gratuito e com certificado."
+        ),
+        "provider": "Fundação Bradesco",
+        "category": "Curso",
+        "icon": "monitor",
+        "unlock_type": "achievement",
+        "required_achievement_name": "Primeira Missão",
+        "required_level": None,
+        "featured": True,
+        "sort_order": 1,
+    },
+    {
+        "title": "AWS Cloud Practitioner",
+        "description": (
+            "Trilha oficial + voucher de certificação em computação em nuvem da "
+            "Amazon — uma das credenciais mais valorizadas do mercado de tecnologia."
+        ),
+        "provider": "Amazon Web Services",
+        "category": "Certificação",
+        "icon": "cloud",
+        "unlock_type": "achievement",
+        "required_achievement_name": "100 XP",
+        "required_level": None,
+        "featured": True,
+        "sort_order": 2,
+    },
+    {
+        "title": "Edição de Vídeo e Audiovisual",
+        "description": (
+            "Curso prático de captação e edição de vídeo — a base da formação em "
+            "Cinema e Audiovisual do CEAP."
+        ),
+        "provider": "Fundação Bradesco",
+        "category": "Curso",
+        "icon": "clapperboard",
+        "unlock_type": "level",
+        "required_achievement_name": None,
+        "required_level": 2,
+        "featured": False,
+        "sort_order": 3,
+    },
+    {
+        "title": "Excel Avançado para Administração",
+        "description": (
+            "Domine planilhas, dashboards e automações que fazem a diferença na "
+            "área administrativa e financeira."
+        ),
+        "provider": "Fundação Bradesco",
+        "category": "Curso",
+        "icon": "table",
+        "unlock_type": "level",
+        "required_achievement_name": None,
+        "required_level": 3,
+        "featured": False,
+        "sort_order": 4,
+    },
+    {
+        "title": "Google IT Support Professional",
+        "description": (
+            "Certificado profissional de suporte em TI do Google, reconhecido "
+            "internacionalmente — porta de entrada para a área de Informática."
+        ),
+        "provider": "Google",
+        "category": "Certificação",
+        "icon": "badge-check",
+        "unlock_type": "level",
+        "required_achievement_name": None,
+        "required_level": 3,
+        "featured": False,
+        "sort_order": 5,
+    },
+    {
+        "title": "Fundamentos de Redes (CCNA Intro)",
+        "description": (
+            "Curso oficial da Cisco sobre fundamentos de redes de computadores — "
+            "teoria e prática que o mercado de Redes exige."
+        ),
+        "provider": "Cisco Networking Academy",
+        "category": "Curso",
+        "icon": "network",
+        "unlock_type": "level",
+        "required_achievement_name": None,
+        "required_level": 4,
+        "featured": False,
+        "sort_order": 6,
+    },
+    {
+        "title": "Certificação de Inglês EF SET",
+        "description": (
+            "Teste e certificado de proficiência em inglês reconhecido mundialmente "
+            "— um diferencial em qualquer carreira."
+        ),
+        "provider": "EF Education First",
+        "category": "Certificação",
+        "icon": "languages",
+        "unlock_type": "level",
+        "required_achievement_name": None,
+        "required_level": 5,
+        "featured": False,
+        "sort_order": 7,
+    },
+)
+
+
 def _future_events(now: datetime) -> tuple[dict, ...]:
     """Monta os eventos de seed com datas relativas a `now` (sempre futuras)."""
     return (
@@ -171,21 +286,53 @@ async def _seed_events(db: AsyncSession) -> int:
     return len(to_create)
 
 
+async def _seed_rewards(db: AsyncSession) -> int:
+    """Semeia as recompensas, resolvendo a conquista de gatilho pelo nome.
+
+    Depende das conquistas já persistidas: `seed()` faz `flush()` após semear o
+    catálogo de conquistas para que os ids estejam disponíveis aqui.
+    """
+    existing = {row.title for row in (await db.execute(select(Reward.title))).all()}
+    achievements_by_name = {
+        achievement.name: achievement.id
+        for achievement in (await db.execute(select(Achievement))).scalars().all()
+    }
+
+    to_create: list[Reward] = []
+    for data in _REWARDS:
+        if data["title"] in existing:
+            continue
+        payload = {key: value for key, value in data.items() if key != "required_achievement_name"}
+        achievement_name = data["required_achievement_name"]
+        payload["required_achievement_id"] = (
+            achievements_by_name.get(achievement_name) if achievement_name else None
+        )
+        to_create.append(Reward(**payload))
+
+    db.add_all(to_create)
+    return len(to_create)
+
+
 async def seed() -> None:
     """Executa o seed completo, numa única transação idempotente."""
     async with AsyncSessionLocal() as db:
         created_steps = await _seed_journey_steps(db)
         created_missions = await _seed_missions(db)
         created_achievements = await _seed_achievements(db)
+        # Recompensas resolvem a conquista de gatilho pelo id: garante que as
+        # conquistas recém-criadas já tenham id antes de semear as recompensas.
+        await db.flush()
         created_events = await _seed_events(db)
+        created_rewards = await _seed_rewards(db)
         await db.commit()
 
     logger.info(
-        "Seed concluído: %d etapas, %d missões, %d conquistas, %d eventos criados.",
+        "Seed concluído: %d etapas, %d missões, %d conquistas, %d eventos, %d recompensas criadas.",
         created_steps,
         created_missions,
         created_achievements,
         created_events,
+        created_rewards,
     )
 
 

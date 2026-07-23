@@ -3,6 +3,13 @@
  * (`GET /api/v1/achievements`). Campos em `snake_case` mantidos como enviados.
  */
 
+/** Recompensa que uma conquista desbloqueia (gancho "conclua → ganhe"). */
+export interface AchievementReward {
+  id: string;
+  title: string;
+  provider: string;
+}
+
 export interface Achievement {
   id: string;
   name: string;
@@ -11,6 +18,8 @@ export interface Achievement {
   icon: string;
   unlocked: boolean;
   unlocked_at: string | null;
+  /** Recompensa atrelada a esta conquista, se houver. */
+  reward: AchievementReward | null;
 }
 
 export interface AchievementSummary {

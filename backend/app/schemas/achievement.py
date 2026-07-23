@@ -10,6 +10,14 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class AchievementReward(BaseModel):
+    """Recompensa atrelada a uma conquista (gancho "conclua → ganhe")."""
+
+    id: uuid.UUID
+    title: str
+    provider: str
+
+
 class AchievementItem(BaseModel):
     """Uma conquista do catálogo com o status de desbloqueio do candidato."""
 
@@ -19,6 +27,8 @@ class AchievementItem(BaseModel):
     icon: str
     unlocked: bool
     unlocked_at: datetime | None
+    # Recompensa que esta conquista desbloqueia (None se não houver).
+    reward: AchievementReward | None = None
 
 
 class AchievementSummary(BaseModel):

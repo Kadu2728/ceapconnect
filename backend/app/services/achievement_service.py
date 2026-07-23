@@ -16,11 +16,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.achievement import Achievement
 from app.models.candidate_profile import CandidateProfile
+from app.models.reward import Reward
 from app.models.user import User
 from app.repositories.achievement_repository import AchievementRepository
+from app.repositories.reward_repository import RewardRepository
 from app.schemas.achievement import (
     AchievementItem,
     AchievementListResponse,
+    AchievementReward,
     AchievementSummary,
 )
 from app.services.candidate_profile_service import get_profile_or_raise
@@ -34,6 +37,7 @@ async def list_achievements(db: AsyncSession, user: User) -> AchievementListResp
     """Retorna o catálogo de conquistas com o status de desbloqueio do candidato."""
     profile = await get_profile_or_raise(db, user)
     rows = await AchievementRepository(db).list_all_with_status_for_profile(profile.id)
+    rewards_by_achievement = await RewardRepository(db).map_by_required_achievement()
 
     items = [
         AchievementItem(
@@ -45,6 +49,7 @@ async def list_achievements(db: AsyncSession, user: User) -> AchievementListResp
             unlocked_at=(
                 candidate_achievement.unlocked_at if candidate_achievement is not None else None
             ),
+            reward=_reward_for(rewards_by_achievement.get(achievement.id)),
         )
         for achievement, candidate_achievement in rows
     ]
@@ -54,6 +59,13 @@ async def list_achievements(db: AsyncSession, user: User) -> AchievementListResp
         achievements=items,
         summary=AchievementSummary(total=len(items), unlocked=unlocked),
     )
+
+
+def _reward_for(reward: Reward | None) -> AchievementReward | None:
+    """Projeta a recompensa atrelada a uma conquista (ou None) no schema de API."""
+    if reward is None:
+        return None
+    return AchievementReward(id=reward.id, title=reward.title, provider=reward.provider)
 
 
 async def evaluate_mission_achievements(

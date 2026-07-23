@@ -6,6 +6,7 @@ apenas chamam estas funções — nenhuma regra de negócio deve viver neles.
 """
 
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,6 +73,10 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> Toke
 
     if user is None or not user.is_active or not verify_password(password, user.password_hash):
         raise UnauthorizedException(_INVALID_CREDENTIALS_MESSAGE)
+
+    # Registra o acesso: base da métrica "acessaram vs. não acessaram" (admin).
+    user.last_login_at = datetime.now(UTC)
+    await db.commit()
 
     return _issue_token_pair(user)
 

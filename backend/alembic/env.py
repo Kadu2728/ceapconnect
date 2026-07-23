@@ -23,6 +23,7 @@ from app.models import (  # noqa: F401, E402
     Achievement,
     CandidateAchievement,
     CandidateProfile,
+    ChatMessage,
     Event,
     EventRegistration,
     JourneyStep,

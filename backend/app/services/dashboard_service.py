@@ -6,10 +6,16 @@ eventos, notificações) para montar o payload único consumido por
 pelos repositórios específicos de cada entidade.
 """
 
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException
+from app.core.gamification import LevelProgress, resolve_level
+from app.models.achievement import Achievement
 from app.models.journey_step import JourneyStep
+from app.models.reward import Reward
+from app.models.reward_redemption import STATUS_CANCELLED
 from app.models.user import User
 from app.repositories.achievement_repository import AchievementRepository
 from app.repositories.candidate_profile_repository import CandidateProfileRepository
@@ -17,14 +23,20 @@ from app.repositories.event_repository import EventRepository
 from app.repositories.journey_step_repository import JourneyStepRepository
 from app.repositories.mission_repository import MissionRepository
 from app.repositories.notification_repository import NotificationRepository
+from app.repositories.reward_repository import (
+    RewardRedemptionRepository,
+    RewardRepository,
+)
 from app.schemas.dashboard import (
     DashboardResponse,
     JourneyProgress,
     JourneyStepItem,
     NextMission,
+    NextReward,
     RecentAchievement,
     UpcomingEvent,
 )
+from app.services import reward_service
 
 _RECENT_ACHIEVEMENTS_LIMIT = 5
 _UPCOMING_EVENTS_LIMIT = 5
@@ -69,15 +81,73 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
         profile.id
     )
 
+    level = resolve_level(profile.xp_total)
+    next_reward = await _build_next_reward(db, profile.id, level)
+
     return DashboardResponse(
         greeting_name=_first_name(user.name),
         journey=journey,
         xp_total=profile.xp_total,
+        level=reward_service.to_level_info(level),
+        next_reward=next_reward,
         next_mission=next_mission,
         recent_achievements=recent_achievements,
         upcoming_events=upcoming_events,
         unread_notifications_count=unread_notifications_count,
         exam_date=profile.exam_date,
+        onboarded=profile.onboarded_at is not None,
+    )
+
+
+async def _build_next_reward(
+    db: AsyncSession, candidate_profile_id: uuid.UUID, level: LevelProgress
+) -> NextReward | None:
+    """Escolhe a recompensa a destacar no Dashboard.
+
+    Prioridade (o que mais engaja o candidato agora):
+    1. uma recompensa **já desbloqueada e ainda não resgatada** → "resgate agora";
+    2. senão, a **próxima ainda bloqueada** (na ordem da vitrine) → "mire nisto";
+    3. senão (tudo resgatado ou catálogo vazio) → nenhuma.
+    """
+    rows = await RewardRepository(db).list_active_ordered()
+    if not rows:
+        return None
+
+    unlocked_achievement_ids = await AchievementRepository(db).list_unlocked_ids_for_profile(
+        candidate_profile_id
+    )
+    redemptions = await RewardRedemptionRepository(db).map_for_profile(candidate_profile_id)
+
+    first_locked: tuple[Reward, Achievement | None] | None = None
+    for reward, achievement in rows:
+        redemption = redemptions.get(reward.id)
+        already_redeemed = redemption is not None and redemption.status != STATUS_CANCELLED
+        if already_redeemed:
+            continue
+
+        unlocked = reward_service.is_reward_unlocked(
+            reward, level=level, unlocked_achievement_ids=unlocked_achievement_ids
+        )
+        if unlocked:
+            return _to_next_reward(reward, achievement, status="available")
+        if first_locked is None:
+            first_locked = (reward, achievement)
+
+    if first_locked is not None:
+        reward, achievement = first_locked
+        return _to_next_reward(reward, achievement, status="locked")
+    return None
+
+
+def _to_next_reward(reward: Reward, achievement: Achievement | None, *, status: str) -> NextReward:
+    """Monta o teaser de recompensa do Dashboard a partir do catálogo."""
+    return NextReward(
+        id=reward.id,
+        title=reward.title,
+        provider=reward.provider,
+        icon=reward.icon,
+        status=status,  # type: ignore[arg-type]  # "available" | "locked"
+        requirement_label=reward_service.reward_requirement_label(reward, achievement),
     )
 
 

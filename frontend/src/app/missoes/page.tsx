@@ -31,6 +31,7 @@ export default function MissoesPage() {
       unreadNotificationsCount={unreadNotificationsCount}
     >
       <PageHeader
+        eyebrow="Sua jornada"
         title="Missões"
         description="Complete missões para ganhar XP, desbloquear conquistas e avançar na sua jornada."
       />

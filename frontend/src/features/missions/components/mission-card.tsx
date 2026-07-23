@@ -26,7 +26,12 @@ export function MissionCard({ mission, onComplete, isCompleting }: MissionCardPr
   const completed = mission.status === "completed";
 
   return (
-    <Card className={cn("gap-4", completed && "bg-muted/40")}>
+    <Card
+      className={cn(
+        "gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+        completed && "bg-muted/40",
+      )}
+    >
       <div className="flex items-start gap-4 px-6">
         <span
           className={cn(
