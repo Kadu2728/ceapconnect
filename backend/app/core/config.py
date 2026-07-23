@@ -49,17 +49,17 @@ class Settings(BaseSettings):
     # --- CORS ---
     cors_origins: str = "http://localhost:3000"
 
-    # --- Assistente IA (EPIC 11 — Groq, nível gratuito) ---
-    groq_api_key: str = Field(
+    # --- Assistente IA (EPIC 11 — Google Gemini) ---
+    gemini_api_key: str = Field(
         default="",
         description=(
-            "Chave da API do Groq (console.groq.com — gratuita, sem cartão; começa "
-            "com 'gsk_'). Vazio = assistente responde 'não configurado'."
+            "Chave da API do Google Gemini (aistudio.google.com/app/apikey). "
+            "Vazio = assistente responde 'não configurado'."
         ),
     )
-    groq_model: str = Field(
-        default="llama-3.3-70b-versatile",
-        description="Modelo do Groq usado pelo assistente (nível gratuito).",
+    gemini_model: str = Field(
+        default="gemini-flash-lite-latest",
+        description="Modelo do Gemini usado pelo assistente (mesmo do projeto VendIA).",
     )
     assistant_max_tokens: int = Field(
         default=1024,

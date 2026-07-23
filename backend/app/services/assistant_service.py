@@ -2,15 +2,15 @@
 
 O assistente responde dúvidas dos alunos sobre o processo seletivo do CEAP e
 sobre o próprio app (missões, conquistas, eventos, jornada). Usa a API do
-**Groq** (nível gratuito, compatível com o formato OpenAI) com streaming de
-resposta, consumida via `httpx` sobre o endpoint `chat/completions` (SSE) —
+**Google Gemini** (mesmo provider e modelo do projeto VendIA) com streaming de
+resposta, consumida via `httpx` sobre o endpoint `streamGenerateContent` (SSE) —
 assim não dependemos de detalhes de versão de SDK. Mantém o histórico da
 conversa por candidato no banco (multi-turn real).
 
 Degradação graciosa: se a chave não estiver configurada, o endpoint continua
 funcionando — responde com uma mensagem clara de "não configurado" e persiste
 a conversa — para a feature estar pronta e passar a responder de verdade assim
-que a chave (gratuita) for adicionada ao `.env`.
+que a chave for adicionada ao `.env`.
 """
 
 import json
@@ -30,7 +30,11 @@ from app.services.candidate_profile_service import get_profile_or_raise
 
 logger = logging.getLogger("ceap_connect.assistant")
 
-_GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+# Endpoint de streaming (SSE) da API do Gemini. `{model}` é interpolado a partir
+# das settings; a chave vai no header `x-goog-api-key` (nunca na URL).
+_GEMINI_STREAM_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse"
+)
 
 _SYSTEM_PROMPT = (
     "Você é o assistente virtual do CEAP Connect, o app que acompanha a jornada "
@@ -68,8 +72,8 @@ _ERROR_MESSAGE = (
 
 
 def is_configured() -> bool:
-    """Indica se a chave da API do Groq está configurada."""
-    return bool(settings.groq_api_key.strip())
+    """Indica se a chave da API do Gemini está configurada."""
+    return bool(settings.gemini_api_key.strip())
 
 
 async def get_history(db: AsyncSession, user: User) -> ChatHistory:
@@ -109,17 +113,17 @@ async def stream_chat(db: AsyncSession, user: User, message: str) -> AsyncGenera
         return
 
     history = await repo.list_for_profile(profile.id)
-    # Formato OpenAI (usado pelo Groq): system + histórico (roles user/assistant).
-    messages = [{"role": "system", "content": _SYSTEM_PROMPT}]
-    messages += [{"role": row.role, "content": row.content} for row in history]
+    # Formato Gemini: o prompt de sistema vai em `system_instruction` (separado);
+    # o histórico vira `contents` com roles "user"/"model".
+    contents = [_to_gemini_content(row.role, row.content) for row in history]
 
     collected: list[str] = []
     try:
-        async for text in _stream_groq(messages):
+        async for text in _stream_gemini(contents):
             collected.append(text)
             yield text
     except Exception:  # noqa: BLE001 — qualquer falha vira uma resposta amigável
-        logger.exception("Falha ao gerar resposta do assistente (Groq)")
+        logger.exception("Falha ao gerar resposta do assistente (Gemini)")
         if not collected:
             collected.append(_ERROR_MESSAGE)
             yield _ERROR_MESSAGE
@@ -129,34 +133,45 @@ async def stream_chat(db: AsyncSession, user: User, message: str) -> AsyncGenera
             await _persist_assistant(repo, db, profile.id, full_reply)
 
 
-async def _stream_groq(messages: list[dict]) -> AsyncGenerator[str]:
-    """Streama a resposta do Groq (SSE, formato OpenAI), emitindo cada trecho."""
-    headers = {"Authorization": f"Bearer {settings.groq_api_key}"}
+def _to_gemini_content(role: str, text: str) -> dict:
+    """Converte uma mensagem do histórico no formato de `contents` do Gemini.
+
+    O Gemini usa os papéis "user" e "model" (não "assistant"); tudo que não for
+    do usuário é tratado como resposta do modelo.
+    """
+    gemini_role = "user" if role == ROLE_USER else "model"
+    return {"role": gemini_role, "parts": [{"text": text}]}
+
+
+async def _stream_gemini(contents: list[dict]) -> AsyncGenerator[str]:
+    """Streama a resposta do Gemini (SSE), emitindo cada trecho de texto."""
+    url = _GEMINI_STREAM_URL.format(model=settings.gemini_model)
+    headers = {"x-goog-api-key": settings.gemini_api_key}
     body = {
-        "model": settings.groq_model,
-        "messages": messages,
-        "max_tokens": settings.assistant_max_tokens,
-        "stream": True,
+        "system_instruction": {"parts": [{"text": _SYSTEM_PROMPT}]},
+        "contents": contents,
+        "generationConfig": {"maxOutputTokens": settings.assistant_max_tokens},
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
-        async with client.stream("POST", _GROQ_URL, headers=headers, json=body) as response:
+        async with client.stream("POST", url, headers=headers, json=body) as response:
             if response.status_code != 200:
                 detail = (await response.aread()).decode("utf-8", "replace")
-                logger.error("Groq %s: %s", response.status_code, detail[:600])
+                logger.error("Gemini %s: %s", response.status_code, detail[:600])
                 response.raise_for_status()
 
             async for line in response.aiter_lines():
                 if not line.startswith("data:"):
                     continue
                 payload = line[len("data:") :].strip()
-                if not payload or payload == "[DONE]":
+                if not payload:
                     continue
                 data = json.loads(payload)
-                for choice in data.get("choices", []):
-                    text = choice.get("delta", {}).get("content")
-                    if text:
-                        yield text
+                for candidate in data.get("candidates", []):
+                    for part in candidate.get("content", {}).get("parts", []):
+                        text = part.get("text")
+                        if text:
+                            yield text
 
 
 async def _persist_assistant(
