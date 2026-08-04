@@ -61,3 +61,47 @@ export interface AdminRedemptionList {
   pending_count: number;
   fulfilled_count: number;
 }
+
+export type RewardUnlockType = "level" | "achievement";
+
+/** Uma recompensa na visão de gestão (inclui inativas). */
+export interface AdminReward {
+  id: string;
+  title: string;
+  description: string;
+  provider: string;
+  category: string;
+  icon: string;
+  unlock_type: RewardUnlockType;
+  required_level: number | null;
+  required_achievement_id: string | null;
+  required_achievement_name: string | null;
+  featured: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface AdminAchievementOption {
+  id: string;
+  name: string;
+}
+
+export interface AdminRewardList {
+  rewards: AdminReward[];
+  achievements: AdminAchievementOption[];
+}
+
+/** Corpo de criação/edição de recompensa (envio completo). */
+export interface AdminRewardInput {
+  title: string;
+  description: string;
+  provider: string;
+  category: string;
+  icon: string;
+  unlock_type: RewardUnlockType;
+  required_level: number | null;
+  required_achievement_id: string | null;
+  featured: boolean;
+  is_active: boolean;
+  sort_order: number;
+}

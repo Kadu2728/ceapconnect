@@ -18,8 +18,13 @@ from app.schemas.admin import (
     AdminRedemptionItem,
     AdminRedemptionListResponse,
 )
+from app.schemas.admin_reward import (
+    AdminRewardItem,
+    AdminRewardListResponse,
+    AdminRewardWrite,
+)
 from app.schemas.response import ApiResponse
-from app.services import admin_service
+from app.services import admin_reward_service, admin_service
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -65,3 +70,49 @@ async def fulfill_redemption(
     """Marca um resgate como entregue e notifica o aluno."""
     data = await admin_service.fulfill_redemption(db, redemption_id)
     return ApiResponse(success=True, message="Entrega confirmada com sucesso.", data=data)
+
+
+@router.get(
+    "/rewards",
+    response_model=ApiResponse[AdminRewardListResponse],
+    summary="Gestão do catálogo de recompensas",
+)
+async def list_rewards(
+    _admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[AdminRewardListResponse]:
+    """Lista todas as recompensas (ativas e inativas) + conquistas para o seletor."""
+    data = await admin_reward_service.list_rewards(db)
+    return ApiResponse(success=True, message="Recompensas recuperadas com sucesso.", data=data)
+
+
+@router.post(
+    "/rewards",
+    response_model=ApiResponse[AdminRewardItem],
+    status_code=201,
+    summary="Cria uma recompensa",
+)
+async def create_reward(
+    payload: AdminRewardWrite,
+    _admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[AdminRewardItem]:
+    """Cria uma nova recompensa no catálogo."""
+    data = await admin_reward_service.create_reward(db, payload)
+    return ApiResponse(success=True, message="Recompensa criada com sucesso.", data=data)
+
+
+@router.patch(
+    "/rewards/{reward_id}",
+    response_model=ApiResponse[AdminRewardItem],
+    summary="Atualiza uma recompensa",
+)
+async def update_reward(
+    reward_id: uuid.UUID,
+    payload: AdminRewardWrite,
+    _admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[AdminRewardItem]:
+    """Atualiza uma recompensa existente (dados, condição, destaque, ativação)."""
+    data = await admin_reward_service.update_reward(db, reward_id, payload)
+    return ApiResponse(success=True, message="Recompensa atualizada com sucesso.", data=data)

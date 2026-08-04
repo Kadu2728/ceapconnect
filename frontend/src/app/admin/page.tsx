@@ -9,7 +9,9 @@ import { AuthenticatedShell } from "@/components/layout/authenticated-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { AdminContent } from "@/features/admin/components/admin-content";
 import { RedemptionsPanel } from "@/features/admin/components/redemptions-panel";
+import { RewardsManager } from "@/features/admin/components/rewards-manager";
 import { useAdminOverview } from "@/features/admin/hooks/use-admin-overview";
+import { useAdminRewards } from "@/features/admin/hooks/use-admin-rewards";
 import { useRedemptions } from "@/features/admin/hooks/use-redemptions";
 import { useRequireAuth } from "@/features/auth/hooks/use-require-auth";
 import { useAuthStore } from "@/features/auth/store/auth-store";
@@ -29,6 +31,7 @@ export default function AdminPage() {
   const dashboardQuery = useDashboard();
   const overviewQuery = useAdminOverview();
   const redemptionsQuery = useRedemptions();
+  const rewardsQuery = useAdminRewards();
 
   useEffect(() => {
     if (isAuthorized && storedUser && !isAdmin) {
@@ -55,6 +58,7 @@ export default function AdminPage() {
       ) : overviewQuery.isSuccess ? (
         <div className="flex flex-col gap-6">
           <AdminContent data={overviewQuery.data} />
+          {rewardsQuery.isSuccess ? <RewardsManager data={rewardsQuery.data} /> : null}
           {redemptionsQuery.isSuccess ? (
             <RedemptionsPanel data={redemptionsQuery.data} />
           ) : null}

@@ -95,6 +95,31 @@ class RewardRepository:
         row = result.first()
         return (row[0], row[1]) if row is not None else None
 
+    async def list_all_ordered(self) -> list[tuple[Reward, Achievement | None]]:
+        """Todas as recompensas (ativas e inativas) + conquista de gatilho — gestão admin.
+
+        Ativas primeiro, depois na mesma ordem da vitrine (destaque, `sort_order`).
+        """
+        stmt = (
+            select(Reward, Achievement)
+            .outerjoin(Achievement, Achievement.id == Reward.required_achievement_id)
+            .order_by(
+                Reward.is_active.desc(),
+                Reward.featured.desc(),
+                Reward.sort_order.asc(),
+                Reward.created_at.asc(),
+            )
+        )
+        result = await self._db.execute(stmt)
+        return [(row[0], row[1]) for row in result.all()]
+
+    async def create(self, **fields) -> Reward:
+        """Cria uma recompensa no catálogo (flush, sem commit)."""
+        reward = Reward(**fields)
+        self._db.add(reward)
+        await self._db.flush()
+        return reward
+
 
 class RewardRedemptionRepository:
     """Repositório dos resgates de recompensas por candidato."""

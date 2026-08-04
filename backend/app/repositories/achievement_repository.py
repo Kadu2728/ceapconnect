@@ -64,6 +64,16 @@ class AchievementRepository:
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def list_all(self) -> list[Achievement]:
+        """Todo o catálogo de conquistas (para seletores administrativos)."""
+        stmt = select(Achievement).order_by(Achievement.created_at.asc())
+        return list((await self._db.execute(stmt)).scalars().all())
+
+    async def get_by_id(self, achievement_id: uuid.UUID) -> Achievement | None:
+        """Busca uma conquista pelo id (valida a conquista de gatilho de uma recompensa)."""
+        stmt = select(Achievement).where(Achievement.id == achievement_id)
+        return (await self._db.execute(stmt)).scalar_one_or_none()
+
     async def list_unlocked_ids_for_profile(
         self, candidate_profile_id: uuid.UUID
     ) -> set[uuid.UUID]:
