@@ -75,14 +75,18 @@ export function AuthenticatedNavbar({
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <span
-            role="status"
+          <Link
+            href="/notificacoes"
             aria-label={
               hasUnread
-                ? `${unreadNotificationsCount} notificações não lidas`
-                : "Nenhuma notificação não lida"
+                ? `Notificações — ${unreadNotificationsCount} não lidas`
+                : "Notificações"
             }
-            className="relative inline-flex size-9 items-center justify-center rounded-md text-muted-foreground"
+            aria-current={pathname === "/notificacoes" ? "page" : undefined}
+            className={cn(
+              "relative inline-flex size-9 items-center justify-center rounded-md transition-colors hover:bg-accent/60 hover:text-foreground",
+              pathname === "/notificacoes" ? "text-brand" : "text-muted-foreground",
+            )}
           >
             <Bell className="size-4" aria-hidden="true" />
             {hasUnread ? (
@@ -93,7 +97,7 @@ export function AuthenticatedNavbar({
                 {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
               </span>
             ) : null}
-          </span>
+          </Link>
 
           <ThemeToggle />
 
