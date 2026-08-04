@@ -30,6 +30,7 @@ from app.services.candidate_profile_service import get_profile_or_raise
 
 _ACHIEVEMENT_FIRST_MISSION = "Primeira Missão"
 _ACHIEVEMENT_100_XP = "100 XP"
+_ACHIEVEMENT_PROFILE_COMPLETE = "Perfil Completo"
 _XP_MILESTONE = 100
 
 
@@ -93,6 +94,19 @@ async def evaluate_mission_achievements(
             newly_unlocked.append(unlocked)
 
     return newly_unlocked
+
+
+async def unlock_profile_complete(
+    db: AsyncSession, profile: CandidateProfile
+) -> Achievement | None:
+    """Desbloqueia "Perfil Completo" quando o candidato salva o perfil. Não commita.
+
+    Idempotente: se já estiver desbloqueada (ou o catálogo não a tiver), não faz
+    nada. Chamado por `profile_service` dentro da mesma transação.
+    """
+    return await _unlock_if_absent(
+        AchievementRepository(db), profile, _ACHIEVEMENT_PROFILE_COMPLETE
+    )
 
 
 async def _unlock_if_absent(

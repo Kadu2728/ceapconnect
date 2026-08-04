@@ -102,15 +102,22 @@ export function AuthenticatedNavbar({
           <ThemeToggle />
 
           <div className="flex items-center gap-2 border-l border-border/60 pl-2 sm:pl-3">
-            <span
-              aria-hidden="true"
-              className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+            <Link
+              href="/perfil"
+              aria-label="Meu perfil"
+              aria-current={pathname === "/perfil" ? "page" : undefined}
+              className="flex items-center gap-2 rounded-full transition-opacity hover:opacity-80"
             >
-              {initials}
-            </span>
-            <span className="hidden max-w-[9rem] truncate text-sm font-medium lg:inline">
-              {userName}
-            </span>
+              <span
+                aria-hidden="true"
+                className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+              >
+                {initials}
+              </span>
+              <span className="hidden max-w-[9rem] truncate text-sm font-medium lg:inline">
+                {userName}
+              </span>
+            </Link>
 
             <Button
               variant="ghost"
