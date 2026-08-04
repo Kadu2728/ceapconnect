@@ -7,6 +7,7 @@ import { AuthenticatedNavbar } from "@/components/layout/authenticated-navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AssistantWidget } from "@/features/assistant/components/assistant-widget";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import { LevelUpCelebration } from "@/features/level-up/components/level-up-celebration";
 import { cn } from "@/lib/utils";
 
 interface AuthenticatedShellProps {
@@ -55,6 +56,7 @@ export function AuthenticatedShell({
 
       <BottomNav />
       <AssistantWidget />
+      <LevelUpCelebration />
     </div>
   );
 }
