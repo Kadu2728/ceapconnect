@@ -26,3 +26,7 @@ python-multipart==0.0.20
 # Cliente HTTP assíncrono usado para consumir a API do Groq (nível gratuito,
 # compatível com OpenAI) em streaming (endpoint `chat/completions`, SSE).
 httpx==0.28.1
+
+# --- Predição de evasão (EPIC 14) ---
+# Job in-process de recálculo de risco (sem worker/processo separado no Render).
+apscheduler==3.11.0

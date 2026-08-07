@@ -22,7 +22,8 @@ const BOTTOM_NAV_LIMIT = 5;
 export function BottomNav() {
   const pathname = usePathname();
   const isAdmin = useAuthStore((state) => state.user?.is_admin ?? false);
-  const navItems = visibleNavItems(isAdmin).slice(0, BOTTOM_NAV_LIMIT);
+  const role = useAuthStore((state) => state.user?.role ?? "candidate");
+  const navItems = visibleNavItems({ isAdmin, role }).slice(0, BOTTOM_NAV_LIMIT);
 
   return (
     <nav

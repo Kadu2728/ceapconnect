@@ -34,7 +34,8 @@ export function AuthenticatedNavbar({
 }: AuthenticatedNavbarProps) {
   const pathname = usePathname();
   const isAdmin = useAuthStore((state) => state.user?.is_admin ?? false);
-  const navItems = visibleNavItems(isAdmin);
+  const role = useAuthStore((state) => state.user?.role ?? "candidate");
+  const navItems = visibleNavItems({ isAdmin, role });
   const initials = getInitials(userName);
   const hasUnread = unreadNotificationsCount > 0;
 

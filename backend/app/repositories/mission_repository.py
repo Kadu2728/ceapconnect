@@ -30,6 +30,11 @@ class MissionRepository:
         """Busca uma missão do catálogo pelo id."""
         return await self._db.get(Mission, mission_id)
 
+    async def count_all(self) -> int:
+        """Total de missões no catálogo — denominador da razão de conclusão (EPIC 14)."""
+        stmt = select(func.count()).select_from(Mission)
+        return int((await self._db.execute(stmt)).scalar_one())
+
     async def list_with_progress_for_profile(
         self, candidate_profile_id: uuid.UUID
     ) -> list[tuple[Mission, MissionProgress]]:
@@ -104,6 +109,24 @@ class MissionProgressRepository:
             )
         )
         return int((await self._db.execute(stmt)).scalar_one())
+
+    async def map_completed_count_for_profiles(
+        self, candidate_profile_ids: Sequence[uuid.UUID]
+    ) -> dict[uuid.UUID, int]:
+        """Missões concluídas por candidato, em lote (EPIC 14 — feature de risco)."""
+        if not candidate_profile_ids:
+            return {}
+
+        stmt = (
+            select(MissionProgress.candidate_profile_id, func.count())
+            .where(
+                MissionProgress.candidate_profile_id.in_(candidate_profile_ids),
+                MissionProgress.status == STATUS_COMPLETED,
+            )
+            .group_by(MissionProgress.candidate_profile_id)
+        )
+        rows = (await self._db.execute(stmt)).all()
+        return {row[0]: int(row[1]) for row in rows}
 
     async def bulk_create_pending(
         self, *, candidate_profile_id: uuid.UUID, mission_ids: Sequence[uuid.UUID]

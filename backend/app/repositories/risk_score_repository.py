@@ -1,0 +1,92 @@
+"""Acesso a dados da entidade `RiskScore` (EPIC 14 — Predição de evasão).
+
+Isola as queries do estado de risco — a camada de services nunca monta SQL/ORM
+diretamente. A leitura da fila (`list_queue`) já traz `CandidateProfile`,
+`User` e `Cohort` via join — é a query que sustenta o Console de Intervenção,
+então evita N+1 por natureza.
+"""
+
+import uuid
+from typing import Any
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.risk_scoring import RiskTier
+from app.models.candidate_profile import CandidateProfile
+from app.models.cohort import Cohort
+from app.models.risk_score import RiskScore
+from app.models.user import User
+
+
+class RiskScoreRepository:
+    """Repositório de leitura/escrita do estado atual de risco por candidato."""
+
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    async def get_by_profile_id(self, candidate_profile_id: uuid.UUID) -> RiskScore | None:
+        """Score atual de um candidato (ou None se nunca calculado)."""
+        stmt = select(RiskScore).where(RiskScore.candidate_profile_id == candidate_profile_id)
+        return (await self._db.execute(stmt)).scalar_one_or_none()
+
+    async def upsert(
+        self,
+        *,
+        candidate_profile_id: uuid.UUID,
+        score: int,
+        tier: RiskTier,
+        factors: list[dict[str, Any]],
+        explanation: str,
+        features: dict[str, Any],
+    ) -> RiskScore:
+        """Cria ou atualiza o score do candidato (flush, sem commit).
+
+        `risk_scores` é upsert por natureza — guarda o estado *atual*, não um
+        histórico (ver módulo docstring de `app.models.risk_score`).
+        """
+        existing = await self.get_by_profile_id(candidate_profile_id)
+        if existing is None:
+            existing = RiskScore(candidate_profile_id=candidate_profile_id)
+            self._db.add(existing)
+
+        existing.score = score
+        existing.tier = tier
+        existing.factors = factors
+        existing.explanation = explanation
+        existing.features = features
+        await self._db.flush()
+        return existing
+
+    async def list_queue(
+        self,
+        *,
+        cohort_ids: list[uuid.UUID] | None,
+        tier: RiskTier | None = None,
+        cohort_id_filter: uuid.UUID | None = None,
+    ) -> list[tuple[RiskScore, CandidateProfile, User, Cohort | None]]:
+        """Fila de risco, mais arriscado primeiro — já filtrada pelo escopo do RBAC.
+
+        `cohort_ids=None` = irrestrito (admin). Uma lista (mesmo vazia) restringe
+        às coortes informadas — lista vazia sempre retorna fila vazia, nunca
+        "todos" (mesma semântica de `CohortScope`).
+        """
+        if cohort_ids is not None and len(cohort_ids) == 0:
+            return []
+
+        stmt = (
+            select(RiskScore, CandidateProfile, User, Cohort)
+            .join(CandidateProfile, CandidateProfile.id == RiskScore.candidate_profile_id)
+            .join(User, User.id == CandidateProfile.user_id)
+            .outerjoin(Cohort, Cohort.id == CandidateProfile.cohort_id)
+            .order_by(RiskScore.score.desc())
+        )
+        if cohort_ids is not None:
+            stmt = stmt.where(CandidateProfile.cohort_id.in_(cohort_ids))
+        if cohort_id_filter is not None:
+            stmt = stmt.where(CandidateProfile.cohort_id == cohort_id_filter)
+        if tier is not None:
+            stmt = stmt.where(RiskScore.tier == tier)
+
+        result = await self._db.execute(stmt)
+        return [(row[0], row[1], row[2], row[3]) for row in result.all()]

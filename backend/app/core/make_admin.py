@@ -13,7 +13,7 @@ import sys
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal, engine
-from app.models.user import User
+from app.models.user import ROLE_ADMIN, User
 
 
 async def promote(email: str) -> int:
@@ -25,11 +25,14 @@ async def promote(email: str) -> int:
             print(f"Usuário não encontrado: {normalized}")
             return 1
 
-        if user.is_admin:
+        if user.is_admin and user.role == ROLE_ADMIN:
             print(f"{normalized} já é admin.")
             return 0
 
+        # Mantém os dois em sincronia: `is_admin` (legado, painel EPIC 10) e
+        # `role` (RBAC da EPIC 14).
         user.is_admin = True
+        user.role = ROLE_ADMIN
         await db.commit()
         print(f"OK: {normalized} agora é administrador.")
         return 0

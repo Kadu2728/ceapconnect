@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundException
 from app.core.gamification import LevelProgress, resolve_level
 from app.models.achievement import Achievement
+from app.models.activity_event import EVENT_STEP_VIEWED
 from app.models.journey_step import JourneyStep
 from app.models.reward import Reward
 from app.models.reward_redemption import STATUS_CANCELLED
@@ -36,7 +37,7 @@ from app.schemas.dashboard import (
     RecentAchievement,
     UpcomingEvent,
 )
-from app.services import reward_service
+from app.services import activity_event_service, reward_service
 
 _RECENT_ACHIEVEMENTS_LIMIT = 5
 _UPCOMING_EVENTS_LIMIT = 5
@@ -83,6 +84,16 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
 
     level = resolve_level(profile.xp_total)
     next_reward = await _build_next_reward(db, profile.id, level)
+
+    # Tracking comportamental (EPIC 14): abrir o Dashboard é ver a jornada —
+    # sinal real de atividade. Como este é um fluxo de leitura (sem commit
+    # natural), o evento commita sozinho; falha aqui nunca quebra o Dashboard.
+    await activity_event_service.track_committed(
+        db,
+        candidate_profile_id=profile.id,
+        name=EVENT_STEP_VIEWED,
+        props={"step_key": profile.current_journey_step_key},
+    )
 
     return DashboardResponse(
         greeting_name=_first_name(user.name),

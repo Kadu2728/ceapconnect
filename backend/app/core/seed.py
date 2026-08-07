@@ -17,11 +17,13 @@ import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal, engine
 from app.models.achievement import Achievement
+from app.models.candidate_profile import CandidateProfile
+from app.models.cohort import Cohort
 from app.models.event import Event
 from app.models.journey_step import JourneyStep
 from app.models.mission import Mission
@@ -286,6 +288,42 @@ async def _seed_events(db: AsyncSession) -> int:
     return len(to_create)
 
 
+async def _seed_cohort(db: AsyncSession) -> tuple[int, int]:
+    """Garante uma coorte para o período atual e atribui candidatos sem coorte.
+
+    Idempotente pela chave natural (ano, semestre). O backfill só toca perfis
+    com `cohort_id` nulo — candidatos já atribuídos nunca são movidos.
+
+    Retorna (coortes criadas, perfis atribuídos).
+    """
+    now = datetime.now(UTC)
+    year = now.year
+    term = "1" if now.month <= 6 else "2"
+
+    existing = (
+        await db.execute(select(Cohort).where(Cohort.year == year, Cohort.term == term))
+    ).scalar_one_or_none()
+
+    created = 0
+    if existing is None:
+        existing = Cohort(
+            name=f"Processo Seletivo {year}.{term}",
+            year=year,
+            term=term,
+            is_active=True,
+        )
+        db.add(existing)
+        await db.flush()
+        created = 1
+
+    result = await db.execute(
+        update(CandidateProfile)
+        .where(CandidateProfile.cohort_id.is_(None))
+        .values(cohort_id=existing.id)
+    )
+    return created, result.rowcount or 0
+
+
 async def _seed_rewards(db: AsyncSession) -> int:
     """Semeia as recompensas, resolvendo a conquista de gatilho pelo nome.
 
@@ -324,15 +362,19 @@ async def seed() -> None:
         await db.flush()
         created_events = await _seed_events(db)
         created_rewards = await _seed_rewards(db)
+        created_cohorts, assigned_profiles = await _seed_cohort(db)
         await db.commit()
 
     logger.info(
-        "Seed concluído: %d etapas, %d missões, %d conquistas, %d eventos, %d recompensas criadas.",
+        "Seed concluído: %d etapas, %d missões, %d conquistas, %d eventos, "
+        "%d recompensas, %d coorte(s) criadas; %d candidato(s) atribuídos à coorte.",
         created_steps,
         created_missions,
         created_achievements,
         created_events,
         created_rewards,
+        created_cohorts,
+        assigned_profiles,
     )
 
 

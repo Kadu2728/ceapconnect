@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.candidate_profile import CandidateProfile
+from app.models.user import ROLE_CANDIDATE, User
 
 
 class CandidateProfileRepository:
@@ -27,6 +28,30 @@ class CandidateProfileRepository:
         )
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_by_id(self, profile_id: uuid.UUID) -> CandidateProfile | None:
+        """Busca um perfil pelo id (ativo, não deletado)."""
+        stmt = select(CandidateProfile).where(
+            CandidateProfile.id == profile_id,
+            CandidateProfile.deleted_at.is_(None),
+        )
+        return (await self._db.execute(stmt)).scalar_one_or_none()
+
+    async def list_active_candidates(self) -> list[CandidateProfile]:
+        """Perfis de candidatos ativos (role=candidate, não deletados) — base
+        do recálculo de risco (EPIC 14). Nunca inclui coordenadores/admins:
+        risco é uma métrica sobre quem está no processo seletivo.
+        """
+        stmt = (
+            select(CandidateProfile)
+            .join(User, User.id == CandidateProfile.user_id)
+            .where(
+                CandidateProfile.deleted_at.is_(None),
+                User.deleted_at.is_(None),
+                User.role == ROLE_CANDIDATE,
+            )
+        )
+        return list((await self._db.execute(stmt)).scalars().all())
 
     async def create(
         self,

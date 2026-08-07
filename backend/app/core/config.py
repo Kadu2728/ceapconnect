@@ -75,6 +75,23 @@ class Settings(BaseSettings):
         ),
     )
 
+    # --- Predição de evasão (EPIC 14) ---
+    internal_api_key: str = Field(
+        default="",
+        description=(
+            "Chave usada por `POST /internal/risk/recompute` — protegida por API "
+            "key de serviço, nunca por JWT de usuário. Vazio = endpoint sempre "
+            "recusa (fail-closed), até a chave ser configurada em produção."
+        ),
+    )
+    risk_recompute_interval_minutes: int = Field(
+        default=60,
+        description=(
+            "Intervalo do job in-process (APScheduler) que recalcula o risco de "
+            "evasão de todos os candidatos ativos."
+        ),
+    )
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Converte a string separada por vírgula de CORS_ORIGINS em lista."""

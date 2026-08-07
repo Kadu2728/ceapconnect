@@ -40,6 +40,16 @@ class CandidateProfile(Base, TimestampMixin, SoftDeleteMixin):
     )
     xp_total: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     exam_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Coorte (turma) do candidato (EPIC 14). Nulo = ainda não atribuído — o
+    # coordenador só enxerga candidatos das suas coortes, então um candidato
+    # sem coorte aparece apenas para admins. SET NULL: apagar a coorte não
+    # apaga o candidato.
+    cohort_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("cohorts.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
     current_journey_step_key: Mapped[str] = mapped_column(
         String(50),
         ForeignKey("journey_steps.key"),

@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   CalendarDays,
   Gift,
   LayoutDashboard,
@@ -8,12 +9,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import type { UserRole } from "@/features/auth/types/auth.types";
+
 export interface AuthNavItem {
   href: string;
   label: string;
   icon: LucideIcon;
   /** Item visível apenas para administradores (ex.: painel admin). */
   adminOnly?: boolean;
+  /** Item visível para coordenadores e administradores (ex.: Console de Intervenção). */
+  staffOnly?: boolean;
 }
 
 /**
@@ -27,10 +32,29 @@ export const AUTH_NAV_ITEMS: AuthNavItem[] = [
   { href: "/conquistas", label: "Conquistas", icon: Trophy },
   { href: "/recompensas", label: "Recompensas", icon: Gift },
   { href: "/eventos", label: "Eventos", icon: CalendarDays },
+  { href: "/risco", label: "Risco", icon: AlertTriangle, staffOnly: true },
   { href: "/admin", label: "Admin", icon: ShieldCheck, adminOnly: true },
 ];
 
-/** Filtra os itens conforme o papel do usuário (admin vê o item do painel). */
-export function visibleNavItems(isAdmin: boolean): AuthNavItem[] {
-  return AUTH_NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+interface VisibilityContext {
+  isAdmin: boolean;
+  role: UserRole;
+}
+
+/**
+ * Filtra os itens conforme o papel do usuário: admin vê tudo, coordenador vê
+ * os itens `staffOnly` (Console de Intervenção) mas não `adminOnly` (painel
+ * de métricas gerais), candidato não vê nenhum dos dois.
+ *
+ * Esta é só a visibilidade da **navegação** — o controle de acesso real
+ * acontece no backend (RBAC com escopo de coorte, EPIC 14); esconder o item
+ * aqui é UX, nunca segurança.
+ */
+export function visibleNavItems({ isAdmin, role }: VisibilityContext): AuthNavItem[] {
+  const isStaff = isAdmin || role === "coordinator";
+  return AUTH_NAV_ITEMS.filter((item) => {
+    if (item.adminOnly) return isAdmin;
+    if (item.staffOnly) return isStaff;
+    return true;
+  });
 }

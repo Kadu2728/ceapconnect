@@ -34,11 +34,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export type UserRole = "candidate" | "coordinator" | "admin";
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   is_admin: boolean;
+  /** EPIC 14 — RBAC: define acesso ao Console de Intervenção (coordinator/admin). */
+  role: UserRole;
 }
 
 export interface LoginResponseData {

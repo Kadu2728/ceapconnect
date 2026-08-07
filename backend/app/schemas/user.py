@@ -9,6 +9,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.models.user import UserRole
+
 
 class UserSummary(BaseModel):
     """Representação pública mínima do usuário (cadastro, login)."""
@@ -19,6 +21,9 @@ class UserSummary(BaseModel):
     name: str
     email: str
     is_admin: bool
+    # EPIC 14 — RBAC: o frontend usa isto (não `is_admin`) para decidir se
+    # mostra a navegação do Console de Intervenção a um coordenador.
+    role: UserRole
 
 
 class UserMe(BaseModel):

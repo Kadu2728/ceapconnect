@@ -8,11 +8,13 @@ from fastapi import APIRouter
 
 from app.api.v1.achievements import router as achievements_router
 from app.api.v1.admin import router as admin_router
+from app.api.v1.admin_risk import router as admin_risk_router
 from app.api.v1.assistant import router as assistant_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.events import router as events_router
 from app.api.v1.health import router as health_router
+from app.api.v1.internal import router as internal_router
 from app.api.v1.missions import router as missions_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.onboarding import router as onboarding_router
@@ -32,5 +34,7 @@ api_router.include_router(events_router)
 api_router.include_router(rewards_router)
 api_router.include_router(notifications_router)
 api_router.include_router(admin_router)
+api_router.include_router(admin_risk_router)
+api_router.include_router(internal_router)
 api_router.include_router(assistant_router)
 api_router.include_router(onboarding_router)

@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException, NotFoundException
+from app.models.activity_event import EVENT_MISSION_COMPLETED
 from app.models.mission import Mission
 from app.models.mission_progress import STATUS_COMPLETED, MissionProgress
 from app.models.user import User
@@ -23,7 +24,7 @@ from app.schemas.mission import (
     MissionSummary,
     UnlockedAchievement,
 )
-from app.services import achievement_service
+from app.services import achievement_service, activity_event_service
 from app.services.candidate_profile_service import get_profile_or_raise
 
 
@@ -78,6 +79,15 @@ async def complete_mission(
     completed_count = await progress_repo.count_completed_for_profile(profile.id)
     newly_unlocked = await achievement_service.evaluate_mission_achievements(
         db, profile, completed_missions=completed_count, xp_total=profile.xp_total
+    )
+
+    # Tracking comportamental (EPIC 14): progresso positivo do candidato —
+    # alimenta a feature "razão de etapas concluídas". Mesma transação.
+    await activity_event_service.track(
+        db,
+        candidate_profile_id=profile.id,
+        name=EVENT_MISSION_COMPLETED,
+        props={"mission_id": str(mission.id), "xp_reward": mission.xp_reward},
     )
 
     await db.commit()

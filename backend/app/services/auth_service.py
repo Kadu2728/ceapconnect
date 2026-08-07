@@ -18,10 +18,13 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.models.activity_event import EVENT_LOGIN
 from app.models.user import User
+from app.repositories.candidate_profile_repository import CandidateProfileRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import RegisterRequest, TokenPairResponse
 from app.schemas.user import UserSummary
+from app.services import activity_event_service
 from app.services.candidate_profile_service import bootstrap_new_candidate
 
 _INVALID_CREDENTIALS_MESSAGE = "E-mail ou senha inválidos."
@@ -76,6 +79,14 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> Toke
 
     # Registra o acesso: base da métrica "acessaram vs. não acessaram" (admin).
     user.last_login_at = datetime.now(UTC)
+
+    # Tracking comportamental (EPIC 14): o login é o sinal mais forte de
+    # atividade — alimenta a feature "dias desde a última atividade". Entra na
+    # mesma transação do `last_login_at`.
+    profile = await CandidateProfileRepository(db).get_by_user_id(user.id)
+    if profile is not None:
+        await activity_event_service.track(db, candidate_profile_id=profile.id, name=EVENT_LOGIN)
+
     await db.commit()
 
     return _issue_token_pair(user)
