@@ -30,6 +30,23 @@ class TopReward(BaseModel):
     count: int
 
 
+class InterventionImpact(BaseModel):
+    """Impacto das intervenções do Console de Evasão nos últimos 30 dias (EPIC 14).
+
+    Fecha o loop "esforço → contato → resultado": mede se as intervenções dos
+    coordenadores estão de fato reduzindo o risco. Campos `None` = ainda não
+    há nenhuma intervenção medida no período (menos de 7 dias desde a 1ª).
+    """
+
+    total: int
+    measured: int
+    pending_measurement: int
+    # Negativo = risco caiu em média (bom sinal).
+    avg_score_delta: float | None
+    pct_improved: float | None
+    pct_had_activity_after: float | None
+
+
 class AdminOverview(BaseModel):
     """Visão geral de métricas da plataforma (`GET /api/v1/admin/overview`)."""
 
@@ -54,6 +71,8 @@ class AdminOverview(BaseModel):
     level_distribution: list[LevelBucket]
     top_rewards: list[TopReward]
     signups_daily: list[DailyCount]
+    # Predição de evasão (EPIC 14).
+    intervention_impact: InterventionImpact
 
 
 class AdminRedemptionItem(BaseModel):

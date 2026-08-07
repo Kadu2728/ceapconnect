@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.candidate_achievement import CandidateAchievement
 from app.models.candidate_profile import CandidateProfile
 from app.models.event_registration import EventRegistration
+from app.models.intervention import Intervention
 from app.models.mission_progress import STATUS_COMPLETED, MissionProgress
 from app.models.reward import Reward
 from app.models.reward_redemption import (
@@ -123,6 +124,41 @@ class AdminRepository:
         )
         rows = (await self._db.execute(stmt)).all()
         return [(row.title, row.provider, int(row.total)) for row in rows]
+
+    async def intervention_impact_stats(
+        self, *, since: datetime
+    ) -> tuple[int, int, int, float | None, int]:
+        """Estatísticas de impacto das intervenções (EPIC 14), numa única query.
+
+        Usa `FILTER (WHERE ...)` para agregar tudo num round-trip só, em vez de
+        5 queries separadas — o painel admin já busca isto a cada carregamento.
+        Retorna (total, medidas, melhoraram, delta médio de score entre as
+        medidas, tiveram atividade depois) para intervenções criadas desde `since`.
+        """
+        score_delta = Intervention.score_after - Intervention.score_at_creation
+        is_measured = Intervention.measured_at.is_not(None)
+
+        stmt = (
+            select(
+                func.count(),
+                func.count().filter(is_measured),
+                func.count().filter(is_measured, score_delta < 0),
+                func.avg(score_delta).filter(is_measured),
+                func.count().filter(is_measured, Intervention.had_activity_after.is_(True)),
+            )
+            .select_from(Intervention)
+            .where(Intervention.created_at >= since)
+        )
+
+        row = (await self._db.execute(stmt)).one()
+        total, measured, improved, avg_delta, had_activity = row
+        return (
+            int(total),
+            int(measured),
+            int(improved),
+            float(avg_delta) if avg_delta is not None else None,
+            int(had_activity),
+        )
 
     async def signups_by_day(self, since: datetime) -> list[tuple[date, int]]:
         """Cadastros de alunos por dia, a partir de `since` (para o gráfico)."""

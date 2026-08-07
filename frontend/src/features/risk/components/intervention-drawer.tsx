@@ -45,6 +45,21 @@ const ACTIVITY_ICON_MAP: Record<string, LucideIcon> = {
   document_uploaded: FileUp,
 };
 
+/** Nomes técnicos do log de eventos → texto legível para o coordenador. */
+const ACTIVITY_LABEL_MAP: Record<string, string> = {
+  login: "Fez login",
+  step_viewed: "Visualizou a jornada",
+  step_completed: "Concluiu uma etapa",
+  mission_started: "Iniciou uma missão",
+  mission_completed: "Concluiu uma missão",
+  mission_abandoned: "Abandonou uma missão",
+  document_uploaded: "Enviou um documento",
+};
+
+function activityLabel(name: string): string {
+  return ACTIVITY_LABEL_MAP[name] ?? name;
+}
+
 const CHANNEL_OPTIONS: { value: InterventionChannel; label: string }[] = [
   { value: "call", label: "Ligar" },
   { value: "whatsapp", label: "WhatsApp" },
@@ -176,7 +191,7 @@ function DrawerContent({
                     <Icon className="size-3.5" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                    {event.name}
+                    {activityLabel(event.name)}
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {WHEN_FORMATTER.format(new Date(event.occurred_at))}

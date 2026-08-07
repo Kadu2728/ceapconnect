@@ -23,12 +23,14 @@ from app.schemas.admin import (
     AdminRedemptionItem,
     AdminRedemptionListResponse,
     DailyCount,
+    InterventionImpact,
     LevelBucket,
     TopReward,
 )
 
 _SIGNUPS_WINDOW_DAYS = 14
 _TOP_REWARDS_LIMIT = 5
+_INTERVENTION_IMPACT_WINDOW_DAYS = 30
 
 
 async def get_overview(db: AsyncSession) -> AdminOverview:
@@ -69,6 +71,8 @@ async def get_overview(db: AsyncSession) -> AdminOverview:
     signups = await repo.signups_by_day(now - timedelta(days=_SIGNUPS_WINDOW_DAYS))
     signups_daily = [DailyCount(date=day, count=count) for day, count in signups]
 
+    intervention_impact = await _build_intervention_impact(repo, now)
+
     return AdminOverview(
         total_students=total,
         accessed=accessed,
@@ -90,6 +94,32 @@ async def get_overview(db: AsyncSession) -> AdminOverview:
         level_distribution=level_distribution,
         top_rewards=top_rewards,
         signups_daily=signups_daily,
+        intervention_impact=intervention_impact,
+    )
+
+
+async def _build_intervention_impact(repo: AdminRepository, now: datetime) -> InterventionImpact:
+    """Monta o card de impacto das intervenções (últimos 30 dias).
+
+    Percentuais são calculados aqui (não em SQL) para evitar divisão por zero
+    quando ainda não há nenhuma intervenção medida — nesse caso ficam `None`,
+    e o frontend mostra um estado de "ainda sem dados" em vez de "0%".
+    """
+    since = now - timedelta(days=_INTERVENTION_IMPACT_WINDOW_DAYS)
+    total, measured, improved, avg_delta, had_activity = await repo.intervention_impact_stats(
+        since=since
+    )
+
+    pct_improved = round((improved / measured) * 100, 1) if measured > 0 else None
+    pct_had_activity = round((had_activity / measured) * 100, 1) if measured > 0 else None
+
+    return InterventionImpact(
+        total=total,
+        measured=measured,
+        pending_measurement=total - measured,
+        avg_score_delta=round(avg_delta, 1) if avg_delta is not None else None,
+        pct_improved=pct_improved,
+        pct_had_activity_after=pct_had_activity,
     )
 
 

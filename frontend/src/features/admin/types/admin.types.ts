@@ -19,6 +19,17 @@ export interface TopReward {
   count: number;
 }
 
+/** Impacto das intervenções do Console de Risco nos últimos 30 dias (EPIC 14). */
+export interface InterventionImpact {
+  total: number;
+  measured: number;
+  pending_measurement: number;
+  /** Negativo = risco caiu em média (bom sinal). Null = ainda sem medições. */
+  avg_score_delta: number | null;
+  pct_improved: number | null;
+  pct_had_activity_after: number | null;
+}
+
 export interface AdminOverview {
   total_students: number;
   accessed: number;
@@ -40,6 +51,7 @@ export interface AdminOverview {
   level_distribution: LevelBucket[];
   top_rewards: TopReward[];
   signups_daily: DailyCount[];
+  intervention_impact: InterventionImpact;
 }
 
 export type RedemptionStatus = "pending" | "fulfilled" | "cancelled";

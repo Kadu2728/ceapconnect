@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { InterventionImpactCard } from "@/features/admin/components/intervention-impact-card";
 import { KpiCard } from "@/features/admin/components/kpi-card";
 import { LevelDistributionChart } from "@/features/admin/components/level-distribution-chart";
 import { SignupsChart } from "@/features/admin/components/signups-chart";
@@ -106,6 +107,11 @@ export function AdminContent({ data }: AdminContentProps) {
             accent="blue"
           />
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionHeading>Console de risco</SectionHeading>
+        <InterventionImpactCard data={data.intervention_impact} />
       </section>
 
       <section className="flex flex-col gap-3">
