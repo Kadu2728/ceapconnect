@@ -22,6 +22,7 @@ from app.models.notification import Notification
 from app.models.reward import Reward
 from app.models.reward_redemption import RewardRedemption
 from app.models.risk_score import RiskScore
+from app.models.simulado import SimuladoAnswer, SimuladoAttempt, SimuladoQuestion
 from app.models.user import User
 
 __all__ = [
@@ -43,5 +44,8 @@ __all__ = [
     "Reward",
     "RewardRedemption",
     "RiskScore",
+    "SimuladoAnswer",
+    "SimuladoAttempt",
+    "SimuladoQuestion",
     "User",
 ]

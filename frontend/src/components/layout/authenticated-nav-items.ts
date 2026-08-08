@@ -3,6 +3,7 @@ import {
   CalendarDays,
   FileText,
   Gift,
+  GraduationCap,
   LayoutDashboard,
   ShieldCheck,
   Target,
@@ -30,6 +31,7 @@ export interface AuthNavItem {
 export const AUTH_NAV_ITEMS: AuthNavItem[] = [
   { href: "/dashboard", label: "Início", icon: LayoutDashboard },
   { href: "/documentos", label: "Documentos", icon: FileText },
+  { href: "/simulados", label: "Simulados", icon: GraduationCap },
   { href: "/missoes", label: "Missões", icon: Target },
   { href: "/conquistas", label: "Conquistas", icon: Trophy },
   { href: "/recompensas", label: "Recompensas", icon: Gift },

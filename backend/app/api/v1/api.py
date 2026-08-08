@@ -21,6 +21,7 @@ from app.api.v1.notifications import router as notifications_router
 from app.api.v1.onboarding import router as onboarding_router
 from app.api.v1.profile import router as profile_router
 from app.api.v1.rewards import router as rewards_router
+from app.api.v1.simulados import router as simulados_router
 from app.api.v1.users import router as users_router
 
 api_router = APIRouter()
@@ -34,6 +35,7 @@ api_router.include_router(missions_router)
 api_router.include_router(achievements_router)
 api_router.include_router(events_router)
 api_router.include_router(rewards_router)
+api_router.include_router(simulados_router)
 api_router.include_router(notifications_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_risk_router)
