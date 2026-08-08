@@ -38,4 +38,6 @@ extend-immutable-calls = [
   "fastapi.Header",
   "fastapi.Cookie",
   "fastapi.Security",
+  "fastapi.File",
+  "fastapi.Form",
 ]

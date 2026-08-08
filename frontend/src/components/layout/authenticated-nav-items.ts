@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   CalendarDays,
+  FileText,
   Gift,
   LayoutDashboard,
   ShieldCheck,
@@ -28,6 +29,7 @@ export interface AuthNavItem {
  */
 export const AUTH_NAV_ITEMS: AuthNavItem[] = [
   { href: "/dashboard", label: "Início", icon: LayoutDashboard },
+  { href: "/documentos", label: "Documentos", icon: FileText },
   { href: "/missoes", label: "Missões", icon: Target },
   { href: "/conquistas", label: "Conquistas", icon: Trophy },
   { href: "/recompensas", label: "Recompensas", icon: Gift },

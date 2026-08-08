@@ -12,6 +12,7 @@ from app.api.v1.admin_risk import router as admin_risk_router
 from app.api.v1.assistant import router as assistant_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.dashboard import router as dashboard_router
+from app.api.v1.documents import router as documents_router
 from app.api.v1.events import router as events_router
 from app.api.v1.health import router as health_router
 from app.api.v1.internal import router as internal_router
@@ -28,6 +29,7 @@ api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(profile_router)
 api_router.include_router(dashboard_router)
+api_router.include_router(documents_router)
 api_router.include_router(missions_router)
 api_router.include_router(achievements_router)
 api_router.include_router(events_router)

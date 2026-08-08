@@ -8,6 +8,7 @@ autogenerate quanto para conferência manual das migrations).
 from app.models.achievement import Achievement
 from app.models.activity_event import ActivityEvent
 from app.models.candidate_achievement import CandidateAchievement
+from app.models.candidate_document import CandidateDocument
 from app.models.candidate_profile import CandidateProfile
 from app.models.chat_message import ChatMessage
 from app.models.cohort import Cohort, CoordinatorCohort
@@ -27,6 +28,7 @@ __all__ = [
     "Achievement",
     "ActivityEvent",
     "CandidateAchievement",
+    "CandidateDocument",
     "CandidateProfile",
     "ChatMessage",
     "Cohort",
