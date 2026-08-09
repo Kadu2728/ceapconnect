@@ -86,7 +86,7 @@ export function AuthenticatedNavbar({
             }
             aria-current={pathname === "/notificacoes" ? "page" : undefined}
             className={cn(
-              "relative inline-flex size-9 items-center justify-center rounded-md transition-colors hover:bg-accent/60 hover:text-foreground",
+              "touch-target relative inline-flex size-9 items-center justify-center rounded-md transition-colors hover:bg-accent/60 hover:text-foreground",
               pathname === "/notificacoes" ? "text-brand" : "text-muted-foreground",
             )}
           >
@@ -110,7 +110,7 @@ export function AuthenticatedNavbar({
               href="/perfil"
               aria-label="Meu perfil"
               aria-current={pathname === "/perfil" ? "page" : undefined}
-              className="flex items-center gap-2 rounded-full transition-opacity hover:opacity-80"
+              className="touch-target flex items-center gap-2 rounded-full transition-opacity hover:opacity-80"
             >
               <span
                 aria-hidden="true"

@@ -130,3 +130,30 @@ html[data-a11y-contrast="high"] :focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 2px;
 }
+
+/* ---------------------------------------------------------------------------
+   Área de toque mínima (WCAG 2.5.5) em dispositivos de toque
+
+   `pointer: coarse` acerta celular/tablet sem tocar no desktop, então o
+   desenho continua compacto no mouse e confortável no dedo. O pseudo-elemento
+   amplia só a área clicável — o tamanho *visual* do ícone não muda, evitando
+   qualquer reflow de layout.
+
+   Declarado como `@utility` (e não como classe CSS solta) porque é assim que
+   o Tailwind v4 registra utilities próprias; CSS solto aqui seria descartado
+   na compilação.
+--------------------------------------------------------------------------- */
+@utility touch-target {
+  @media (pointer: coarse) {
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+    }
+  }
+}

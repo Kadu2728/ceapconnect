@@ -39,6 +39,15 @@ export function AuthenticatedShell({
 
   return (
     <div className="flex min-h-svh flex-col bg-muted/30">
+      {/* Primeiro foco tabulável da página: sem ele, chegar ao conteúdo pelo
+          teclado exige passar por toda a navegação em cada tela. */}
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+      >
+        Pular para o conteúdo
+      </a>
+
       <AuthenticatedNavbar
         userName={userName}
         unreadNotificationsCount={unreadNotificationsCount}
@@ -46,8 +55,10 @@ export function AuthenticatedShell({
       />
 
       <main
+        id="conteudo"
+        tabIndex={-1}
         className={cn(
-          "mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-28 sm:px-6 lg:px-8 lg:py-12 md:pb-12",
+          "mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-28 outline-none sm:px-6 lg:px-8 lg:py-12 md:pb-12",
           className,
         )}
       >
