@@ -57,3 +57,51 @@ services:
       #   https://ceap-connect.vercel.app
       - key: CORS_ORIGINS
         sync: false
+
+      # --- Assistente IA (EPIC 11 — Google Gemini) ---
+      # Sem a chave, o assistente segue funcionando, mas responde com uma
+      # mensagem de "não configurado" em vez de respostas reais.
+      # Obtenha em: https://aistudio.google.com/apikey
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-lite-latest
+
+      # --- Predição de evasão (EPIC 14) ---
+      # Chave de serviço de `POST /internal/risk/recompute` (validada por
+      # header, nunca por JWT). Gerada pelo Render: ninguém precisa escolher o
+      # valor — se for necessário chamar o endpoint à mão, leia-o no painel.
+      # O job in-process (APScheduler) roda independente dela.
+      - key: INTERNAL_API_KEY
+        generateValue: true
+      - key: RISK_RECOMPUTE_INTERVAL_MINUTES
+        value: "60"
+
+      # --- Envolver o responsável (EPIC 17) ---
+      # Sem RESEND_API_KEY o aviso por e-mail responde `sent=false` com uma
+      # mensagem clara; o link de WhatsApp funciona 100% sem nenhuma chave.
+      # Crie a chave em: https://resend.com/api-keys
+      - key: RESEND_API_KEY
+        sync: false
+      # Domínio de teste do Resend — funciona sem verificar domínio próprio.
+      - key: RESEND_FROM_EMAIL
+        value: onboarding@resend.dev
+      - key: INTERVIEW_OFFSET_DAYS
+        value: "21"
+      - key: INTERVIEW_LOCATION
+        value: Unidade CEAP — Pedreira, São Paulo/SP
+
+      # --- PWA + push notifications (EPIC 18) ---
+      # A chave PÚBLICA não é segredo: ela é servida ao navegador em
+      # `GET /api/v1/push/public-key` para o dispositivo se inscrever. Fica
+      # versionada aqui de propósito, para reduzir o que precisa ser colado à
+      # mão. A PRIVADA nunca sai do servidor.
+      #
+      # ATENÇÃO: as duas formam um par — ao regenerar, troque AMBAS juntas,
+      # senão as inscrições existentes param de receber push.
+      - key: VAPID_PUBLIC_KEY
+        value: BPiILHSU8e-QJJibKywUQEYYD9XzndW0Z4_aO5QvpDj3P1elwuGyJPZETUoHwMqC9uLnpBISbeJ0QVHNGn6Qvl8
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: mailto:contato@ceappedreira.org.br
