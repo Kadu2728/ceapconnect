@@ -29,6 +29,16 @@ export function AppProviders({ children }: AppProvidersProps) {
     // `features/auth/store/auth-store.ts` sobre por que `skipHydration` é
     // necessário aqui (evitar acesso a `localStorage` durante o SSR).
     void useAuthStore.persist.rehydrate();
+
+    // Registro do service worker (EPIC 18): é o que torna o app instalável,
+    // então precisa acontecer no app inteiro e independente da permissão de
+    // notificação — a inscrição no push é um passo separado, no Perfil.
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Falha ao registrar não pode quebrar o app: sem SW ele só deixa de
+        // ser instalável/receber push, todo o resto continua funcionando.
+      });
+    }
   }, []);
 
   return (

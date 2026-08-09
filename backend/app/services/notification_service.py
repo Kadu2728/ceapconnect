@@ -1,8 +1,10 @@
 """Regra de negócio da Central de Notificações (EPIC 08).
 
-Lista as notificações do candidato e permite marcá-las como lidas (uma a uma ou
-todas de uma vez). Notificações são criadas por outras features (eventos,
-recompensas, sistema) — aqui só há leitura e atualização do status `read`.
+Lista as notificações do candidato, permite marcá-las como lidas (uma a uma ou
+todas de uma vez), e centraliza a criação de notificações por outras features
+(eventos, recompensas, sistema) via `create_notification` — ponto único que
+também dispara o push (EPIC 18), para nenhuma feature esquecer de avisar o
+candidato nos dois canais.
 """
 
 import uuid
@@ -10,6 +12,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException
+from app.models.notification import Notification, NotificationCategory
 from app.models.user import User
 from app.repositories.notification_repository import NotificationRepository
 from app.schemas.notification import (
@@ -17,7 +20,29 @@ from app.schemas.notification import (
     NotificationItem,
     NotificationListResponse,
 )
+from app.services import push_service
 from app.services.candidate_profile_service import get_profile_or_raise
+
+
+async def create_notification(
+    db: AsyncSession,
+    *,
+    candidate_profile_id: uuid.UUID,
+    title: str,
+    description: str,
+    category: NotificationCategory,
+) -> Notification:
+    """Cria a notificação in-app e dispara o push (best-effort) do mesmo
+    conteúdo. Não commita — participa da transação do chamador, como antes.
+    """
+    notification = await NotificationRepository(db).create(
+        candidate_profile_id=candidate_profile_id,
+        title=title,
+        description=description,
+        category=category,
+    )
+    await push_service.send_push_to_profile(db, candidate_profile_id, title=title, body=description)
+    return notification
 
 
 async def list_notifications(db: AsyncSession, user: User) -> NotificationListResponse:

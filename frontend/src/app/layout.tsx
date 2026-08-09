@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   },
   description:
     "Plataforma de Candidate Experience gamificada do processo seletivo do CEAP.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/icon512.png",
+    apple: "/icons/icon192.png",
+  },
 };
 
 export const viewport: Viewport = {

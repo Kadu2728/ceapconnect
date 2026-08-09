@@ -29,7 +29,6 @@ from app.models.reward_redemption import (
 )
 from app.models.user import User
 from app.repositories.achievement_repository import AchievementRepository
-from app.repositories.notification_repository import NotificationRepository
 from app.repositories.reward_repository import (
     RewardRedemptionRepository,
     RewardRepository,
@@ -42,6 +41,7 @@ from app.schemas.reward import (
     RewardStatus,
     RewardSummary,
 )
+from app.services import notification_service
 from app.services.candidate_profile_service import get_profile_or_raise
 
 
@@ -107,7 +107,8 @@ async def redeem_reward(db: AsyncSession, user: User, reward_id: uuid.UUID) -> R
         raise ConflictException("Você já resgatou esta recompensa.")
 
     redemption = await redemption_repo.create(candidate_profile_id=profile.id, reward_id=reward.id)
-    await NotificationRepository(db).create(
+    await notification_service.create_notification(
+        db,
         candidate_profile_id=profile.id,
         title="Recompensa resgatada 🎉",
         description=(

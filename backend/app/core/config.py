@@ -103,6 +103,23 @@ class Settings(BaseSettings):
         ),
     )
 
+    # --- PWA + push notifications (EPIC 18) ---
+    vapid_public_key: str = Field(
+        default="",
+        description=(
+            "Chave pública VAPID (par gerado uma vez com py-vapid) — enviada ao "
+            "navegador para ele poder se inscrever no push. Vazio = push indisponível."
+        ),
+    )
+    vapid_private_key: str = Field(
+        default="",
+        description="Chave privada VAPID — nunca exposta ao frontend.",
+    )
+    vapid_subject: str = Field(
+        default="mailto:contato@ceappedreira.org.br",
+        description="Contato do remetente exigido pelo protocolo Web Push (claim 'sub').",
+    )
+
     # --- Predição de evasão (EPIC 14) ---
     internal_api_key: str = Field(
         default="",

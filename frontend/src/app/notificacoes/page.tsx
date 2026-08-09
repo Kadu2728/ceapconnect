@@ -9,6 +9,7 @@ import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
 import { NotificationsContent } from "@/features/notifications/components/notifications-content";
 import { useNotifications } from "@/features/notifications/hooks/use-notifications";
+import { PushNotificationsCard } from "@/features/push/components/push-notifications-card";
 
 /**
  * Central de Notificações (EPIC 08). Lista os avisos do candidato (eventos,
@@ -35,6 +36,10 @@ export default function NotificacoesPage() {
         title="Notificações"
         description="Acompanhe tudo o que acontece na sua jornada — eventos, missões, recompensas e lembretes."
       />
+
+      <div className="mb-4">
+        <PushNotificationsCard />
+      </div>
 
       {!isAuthorized || notificationsQuery.isPending ? (
         <CardListSkeleton count={5} />

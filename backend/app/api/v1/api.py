@@ -20,6 +20,7 @@ from app.api.v1.missions import router as missions_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.onboarding import router as onboarding_router
 from app.api.v1.profile import router as profile_router
+from app.api.v1.push import router as push_router
 from app.api.v1.rewards import router as rewards_router
 from app.api.v1.simulados import router as simulados_router
 from app.api.v1.users import router as users_router
@@ -42,3 +43,4 @@ api_router.include_router(admin_risk_router)
 api_router.include_router(internal_router)
 api_router.include_router(assistant_router)
 api_router.include_router(onboarding_router)
+api_router.include_router(push_router)

@@ -16,7 +16,6 @@ from app.core.exceptions import ConflictException, NotFoundException
 from app.core.gamification import LEVEL_TIERS, resolve_level
 from app.models.reward_redemption import STATUS_FULFILLED
 from app.repositories.admin_repository import AdminRepository
-from app.repositories.notification_repository import NotificationRepository
 from app.repositories.reward_repository import RewardRedemptionRepository
 from app.schemas.admin import (
     AdminOverview,
@@ -27,6 +26,7 @@ from app.schemas.admin import (
     LevelBucket,
     TopReward,
 )
+from app.services import notification_service
 
 _SIGNUPS_WINDOW_DAYS = 14
 _TOP_REWARDS_LIMIT = 5
@@ -182,7 +182,8 @@ async def fulfill_redemption(db: AsyncSession, redemption_id: uuid.UUID) -> Admi
     redemption.fulfilled_at = datetime.now(UTC)
     await db.flush()
 
-    await NotificationRepository(db).create(
+    await notification_service.create_notification(
+        db,
         candidate_profile_id=redemption.candidate_profile_id,
         title="Recompensa entregue ✅",
         description=(

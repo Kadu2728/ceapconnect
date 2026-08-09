@@ -14,13 +14,13 @@ from app.core.exceptions import ConflictException, NotFoundException
 from app.models.event import Event
 from app.models.user import User
 from app.repositories.event_repository import EventRegistrationRepository, EventRepository
-from app.repositories.notification_repository import NotificationRepository
 from app.schemas.event import (
     EventItem,
     EventListResponse,
     EventRegistrationResponse,
     EventSummary,
 )
+from app.services import notification_service
 from app.services.candidate_profile_service import get_profile_or_raise
 
 
@@ -54,7 +54,8 @@ async def register_event(
         raise ConflictException("Você já está inscrito neste evento.")
 
     await registration_repo.create(candidate_profile_id=profile.id, event_id=event_id)
-    await NotificationRepository(db).create(
+    await notification_service.create_notification(
+        db,
         candidate_profile_id=profile.id,
         title="Inscrição confirmada",
         description=f'Sua inscrição no evento "{event.title}" foi confirmada.',

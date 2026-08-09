@@ -30,3 +30,8 @@ httpx==0.28.1
 # --- Predição de evasão (EPIC 14) ---
 # Job in-process de recálculo de risco (sem worker/processo separado no Render).
 apscheduler==3.11.0
+
+# --- PWA + push notifications (EPIC 18) ---
+# Envia notificações push reais via Web Push (protocolo padrão do navegador,
+# sem SDK/serviço pago — autenticado com um par de chaves VAPID gerado uma vez).
+pywebpush==2.4.0
