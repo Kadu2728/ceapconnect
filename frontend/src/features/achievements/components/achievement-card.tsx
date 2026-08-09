@@ -2,6 +2,7 @@ import { Gift, Lock } from "lucide-react";
 import { createElement } from "react";
 
 import { Card } from "@/components/ui/card";
+import { ShareAchievementButton } from "@/features/achievements/components/share-achievement-button";
 import type { Achievement } from "@/features/achievements/types/achievement.types";
 import { resolveAchievementIcon } from "@/features/dashboard/utils/achievement-icons";
 import { cn } from "@/lib/utils";
@@ -81,6 +82,8 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
             Recompensa: {achievement.reward.title}
           </span>
         ) : null}
+
+        {unlocked ? <ShareAchievementButton achievement={achievement} /> : null}
       </div>
     </Card>
   );
