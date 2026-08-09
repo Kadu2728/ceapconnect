@@ -68,6 +68,14 @@ export interface DashboardNextReward {
   requirement_label: string;
 }
 
+/** Faixa de engajamento na coorte, sem posição nominal (EPIC 20). */
+export interface DashboardCohortStanding {
+  cohort_size: number;
+  /** 10/25/50 = "entre os N% mais engajados"; null = mensagem de progresso pessoal. */
+  top_percent: number | null;
+  message: string;
+}
+
 export interface DashboardData {
   greeting_name: string;
   journey: DashboardJourney;
@@ -80,4 +88,5 @@ export interface DashboardData {
   unread_notifications_count: number;
   exam_date: string | null;
   onboarded: boolean;
+  cohort_standing: DashboardCohortStanding | null;
 }

@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 
 import { AchievementsStrip } from "@/features/dashboard/components/achievements-strip";
+import { CohortStandingCard } from "@/features/dashboard/components/cohort-standing-card";
 import { ExamCountdown } from "@/features/dashboard/components/exam-countdown";
 import { Greeting } from "@/features/dashboard/components/greeting";
 import { JourneyProgress } from "@/features/dashboard/components/journey-progress";
@@ -78,6 +79,10 @@ export function DashboardContent({ data }: DashboardContentProps) {
 
       <motion.div variants={itemVariants}>
         <AchievementsStrip achievements={data.recent_achievements} />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <CohortStandingCard standing={data.cohort_standing} />
       </motion.div>
     </motion.div>
   );

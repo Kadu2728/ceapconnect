@@ -37,7 +37,7 @@ from app.schemas.dashboard import (
     RecentAchievement,
     UpcomingEvent,
 )
-from app.services import activity_event_service, reward_service
+from app.services import activity_event_service, cohort_stats_service, reward_service
 
 _RECENT_ACHIEVEMENTS_LIMIT = 5
 _UPCOMING_EVENTS_LIMIT = 5
@@ -107,6 +107,7 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
         unread_notifications_count=unread_notifications_count,
         exam_date=profile.exam_date,
         onboarded=profile.onboarded_at is not None,
+        cohort_standing=await cohort_stats_service.build_cohort_standing(db, profile),
     )
 
 

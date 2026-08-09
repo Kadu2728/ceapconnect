@@ -75,6 +75,20 @@ class NextReward(BaseModel):
     requirement_label: str
 
 
+class CohortStanding(BaseModel):
+    """Faixa de engajamento do candidato na coorte (EPIC 20).
+
+    Nunca carrega posição exata nem identidade de outros candidatos — só a
+    faixa ampla e o tamanho da turma. Ver `cohort_stats_service`.
+    """
+
+    cohort_size: int
+    # 10/25/50 = "entre os N% mais engajados"; None = fora do top 50 (a
+    # mensagem vira progresso pessoal, nunca "você está entre os piores").
+    top_percent: int | None
+    message: str
+
+
 class DashboardResponse(BaseModel):
     """Dado agregado retornado por `GET /api/v1/dashboard`."""
 
@@ -92,3 +106,5 @@ class DashboardResponse(BaseModel):
     exam_date: date | None
     # False = candidato ainda não viu a tela de boas-vindas (primeiro login).
     onboarded: bool
+    # None = coorte inexistente/pequena demais para ser anônima (EPIC 20).
+    cohort_standing: CohortStanding | None
