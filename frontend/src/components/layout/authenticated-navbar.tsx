@@ -8,6 +8,7 @@ import { CeapLogo } from "@/components/brand/ceap-logo";
 import { visibleNavItems } from "@/components/layout/authenticated-nav-items";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { AccessibilityMenu } from "@/features/accessibility/components/accessibility-menu";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { APP_CONTAINER_CLASS } from "@/lib/layout";
 import { getInitials } from "@/lib/text";
@@ -99,6 +100,8 @@ export function AuthenticatedNavbar({
               </span>
             ) : null}
           </Link>
+
+          <AccessibilityMenu />
 
           <ThemeToggle />
 

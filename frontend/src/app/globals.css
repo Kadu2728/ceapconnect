@@ -75,3 +75,58 @@
     scroll-behavior: auto;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Preferências de acessibilidade (EPIC 21)
+   Aplicadas por atributos `data-*` no <html> e persistidas em localStorage.
+   Tudo em CSS puro: nenhum webfont extra (fontes "para dislexia" custam 50KB+
+   e a evidência aponta o espaçamento como o maior ganho de legibilidade) e
+   nenhum JavaScript por componente.
+--------------------------------------------------------------------------- */
+
+/* Leitura facilitada: letterforms mais distintas + espaçamento generoso, as
+   duas alavancas com maior impacto para leitores com dislexia. */
+html[data-a11y-readable="true"] body {
+  font-family: Verdana, Tahoma, sans-serif;
+  letter-spacing: 0.04em;
+  word-spacing: 0.14em;
+  line-height: 1.75;
+}
+
+/* Texto maior: escala a raiz, então todo `rem` do design system acompanha
+   proporcionalmente — sem quebrar o ritmo vertical. */
+html[data-a11y-text="large"] {
+  font-size: 112.5%;
+}
+
+html[data-a11y-text="xlarge"] {
+  font-size: 125%;
+}
+
+/* Alto contraste: reforça texto, bordas e foco. Só sobrescreve os tokens
+   relevantes — a identidade de marca continua reconhecível. */
+html[data-a11y-contrast="high"] {
+  --foreground: oklch(0.08 0 0);
+  --muted-foreground: oklch(0.28 0.01 250);
+  --card-foreground: oklch(0.08 0 0);
+  --border: oklch(0.55 0.02 250);
+  --input: oklch(0.5 0.02 250);
+  --ring: oklch(0.35 0.15 248);
+  --primary: oklch(0.38 0.15 248);
+}
+
+html[data-a11y-contrast="high"].dark {
+  --foreground: oklch(0.99 0 0);
+  --muted-foreground: oklch(0.85 0.01 250);
+  --card-foreground: oklch(0.99 0 0);
+  --border: oklch(0.62 0.02 250);
+  --input: oklch(0.62 0.02 250);
+  --ring: oklch(0.8 0.13 242);
+  --primary: oklch(0.82 0.13 242);
+}
+
+/* Foco sempre visível e mais espesso quando o alto contraste está ativo. */
+html[data-a11y-contrast="high"] :focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
