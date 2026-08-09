@@ -59,6 +59,23 @@ class CandidateProfile(Base, TimestampMixin, SoftDeleteMixin):
     # Quando o candidato concluiu a tela de boas-vindas (onboarding do primeiro
     # login, USER_FLOW.md). `None` = ainda não viu — mostrar o onboarding.
     onboarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Entrevista com o responsável (3ª etapa do processo seletivo real, EPIC 17).
+    # Calculada automaticamente no bootstrap a partir de `exam_date`, mesmo
+    # racional provisório de `default_exam_offset_days` — até o produto ter uma
+    # data real configurável por edital.
+    interview_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Contato do responsável (obrigatório entrevistar um responsável legal, já
+    # que o público são menores de idade) — preenchido pelo próprio candidato
+    # na tela de Perfil, nunca coletado no cadastro inicial.
+    guardian_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    guardian_phone: Mapped[str | None] = mapped_column(String(11), nullable=True)
+    guardian_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Quando o e-mail de aviso da entrevista foi enviado com sucesso ao
+    # responsável. `None` = ainda não avisado (ou o contato mudou desde o
+    # último aviso — ver `profile_service.update_profile`).
+    guardian_notified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     def __repr__(self) -> str:
         return f"<CandidateProfile id={self.id} user_id={self.user_id}>"

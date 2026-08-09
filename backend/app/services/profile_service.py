@@ -6,8 +6,11 @@ também desbloqueia a conquista "Perfil Completo" (antes inalcançável), fechan
 mais um laço da gamificação.
 """
 
+from datetime import UTC, datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.gamification import resolve_level
 from app.models.candidate_profile import CandidateProfile
 from app.models.reward_redemption import STATUS_CANCELLED
@@ -15,8 +18,13 @@ from app.models.user import User
 from app.repositories.achievement_repository import AchievementRepository
 from app.repositories.mission_repository import MissionProgressRepository
 from app.repositories.reward_repository import RewardRedemptionRepository
-from app.schemas.profile import ProfileResponse, ProfileStats, ProfileUpdateRequest
-from app.services import achievement_service, reward_service
+from app.schemas.profile import (
+    GuardianEmailNoticeResult,
+    ProfileResponse,
+    ProfileStats,
+    ProfileUpdateRequest,
+)
+from app.services import achievement_service, guardian_notice_service, reward_service
 from app.services.candidate_profile_service import get_profile_or_raise
 
 
@@ -29,17 +37,40 @@ async def get_profile(db: AsyncSession, user: User) -> ProfileResponse:
 async def update_profile(
     db: AsyncSession, user: User, payload: ProfileUpdateRequest
 ) -> ProfileResponse:
-    """Atualiza nome/telefone do usuário e desbloqueia "Perfil Completo"."""
+    """Atualiza dados do candidato e do responsável, e desbloqueia "Perfil Completo"."""
     profile = await get_profile_or_raise(db, user)
 
     user.name = payload.name
     user.phone = payload.phone
+
+    # Se o e-mail do responsável mudou, o último aviso enviado não vale mais
+    # para o contato novo — evita mostrar "avisado" para um e-mail errado.
+    if payload.guardian_email != profile.guardian_email:
+        profile.guardian_notified_at = None
+
+    profile.guardian_name = payload.guardian_name
+    profile.guardian_phone = payload.guardian_phone
+    profile.guardian_email = payload.guardian_email
     await db.flush()
 
     await achievement_service.unlock_profile_complete(db, profile)
     await db.commit()
 
     return await _build_response(db, user, profile)
+
+
+async def notify_guardian_email(db: AsyncSession, user: User) -> GuardianEmailNoticeResult:
+    """Envia o e-mail de aviso da entrevista ao responsável (EPIC 17)."""
+    profile = await get_profile_or_raise(db, user)
+
+    sent, message = await guardian_notice_service.send_guardian_email(user=user, profile=profile)
+    if sent:
+        profile.guardian_notified_at = datetime.now(UTC)
+        await db.commit()
+
+    return GuardianEmailNoticeResult(
+        sent=sent, message=message, guardian_notified_at=profile.guardian_notified_at
+    )
 
 
 async def _build_response(
@@ -70,6 +101,12 @@ async def _build_response(
             achievements_unlocked=achievements_unlocked,
             rewards_redeemed=rewards_redeemed,
         ),
+        interview_date=profile.interview_date,
+        interview_location=settings.interview_location,
+        guardian_name=profile.guardian_name,
+        guardian_phone=profile.guardian_phone,
+        guardian_email=profile.guardian_email,
+        guardian_notified_at=profile.guardian_notified_at,
     )
 
 

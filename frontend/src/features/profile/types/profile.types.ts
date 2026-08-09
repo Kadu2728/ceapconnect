@@ -21,9 +21,25 @@ export interface Profile {
   phone: string;
   member_since: string;
   stats: ProfileStats;
+  /** Entrevista com o responsável (EPIC 17). */
+  interview_date: string | null;
+  interview_location: string;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  guardian_email: string | null;
+  guardian_notified_at: string | null;
 }
 
 export interface ProfileUpdateInput {
   name: string;
   phone: string;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  guardian_email: string | null;
+}
+
+export interface GuardianEmailNoticeResult {
+  sent: boolean;
+  message: string;
+  guardian_notified_at: string | null;
 }

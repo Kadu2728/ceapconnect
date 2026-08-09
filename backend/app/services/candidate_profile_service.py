@@ -48,11 +48,15 @@ async def bootstrap_new_candidate(db: AsyncSession, user_id: uuid.UUID) -> Candi
     """
     initial_step_key = await _resolve_initial_journey_step_key(db)
     exam_date = date.today() + timedelta(days=settings.default_exam_offset_days)
+    # A entrevista com o responsável (3ª etapa do processo seletivo real)
+    # acontece depois da prova — mesmo racional provisório de offset fixo.
+    interview_date = exam_date + timedelta(days=settings.interview_offset_days)
 
     profile = await CandidateProfileRepository(db).create(
         user_id=user_id,
         current_journey_step_key=initial_step_key,
         exam_date=exam_date,
+        interview_date=interview_date,
     )
 
     missions = await MissionRepository(db).list_all()

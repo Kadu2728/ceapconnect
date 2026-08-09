@@ -75,6 +75,34 @@ class Settings(BaseSettings):
         ),
     )
 
+    # --- Envolver o responsável (EPIC 17) ---
+    interview_offset_days: int = Field(
+        default=21,
+        description=(
+            "Número de dias após a prova usado como data provisória da entrevista "
+            "com o responsável, até o produto ter uma data real por edital."
+        ),
+    )
+    interview_location: str = Field(
+        default="Unidade CEAP — Pedreira, São Paulo/SP",
+        description="Local da entrevista, exibido ao candidato e enviado ao responsável.",
+    )
+    resend_api_key: str = Field(
+        default="",
+        description=(
+            "Chave da API do Resend (resend.com/api-keys) usada para avisar o "
+            "responsável por e-mail. Vazio = o aviso por e-mail fica indisponível "
+            "(o link de WhatsApp continua funcionando normalmente)."
+        ),
+    )
+    resend_from_email: str = Field(
+        default="onboarding@resend.dev",
+        description=(
+            "Remetente do e-mail de aviso. O domínio de teste do Resend "
+            "(onboarding@resend.dev) funciona sem verificação de domínio próprio."
+        ),
+    )
+
     # --- Predição de evasão (EPIC 14) ---
     internal_api_key: str = Field(
         default="",

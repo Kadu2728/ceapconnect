@@ -1,6 +1,10 @@
 import { apiClient } from "@/lib/axios";
 
-import type { Profile, ProfileUpdateInput } from "@/features/profile/types/profile.types";
+import type {
+  GuardianEmailNoticeResult,
+  Profile,
+  ProfileUpdateInput,
+} from "@/features/profile/types/profile.types";
 import type { ApiEnvelope } from "@/types/api";
 
 /**
@@ -16,5 +20,12 @@ export async function fetchProfile(): Promise<Profile> {
 
 export async function updateProfile(input: ProfileUpdateInput): Promise<Profile> {
   const { data } = await apiClient.patch<ApiEnvelope<Profile>>(PROFILE_ENDPOINT, input);
+  return data.data;
+}
+
+export async function notifyGuardianByEmail(): Promise<GuardianEmailNoticeResult> {
+  const { data } = await apiClient.post<ApiEnvelope<GuardianEmailNoticeResult>>(
+    `${PROFILE_ENDPOINT}/guardian/notify-email`,
+  );
   return data.data;
 }

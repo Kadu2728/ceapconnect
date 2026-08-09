@@ -59,6 +59,7 @@ class CandidateProfileRepository:
         user_id: uuid.UUID,
         current_journey_step_key: str,
         exam_date: date | None,
+        interview_date: date | None = None,
     ) -> CandidateProfile:
         """Adiciona um novo perfil à sessão e faz `flush` (sem commit).
 
@@ -70,6 +71,7 @@ class CandidateProfileRepository:
             user_id=user_id,
             current_journey_step_key=current_journey_step_key,
             exam_date=exam_date,
+            interview_date=interview_date,
         )
         self._db.add(profile)
         await self._db.flush()
