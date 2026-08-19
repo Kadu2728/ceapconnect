@@ -8,24 +8,37 @@ best-effort — qualquer falha ao registrar é logada e engolida, jamais propaga
 para o fluxo de negócio que a chamou (concluir uma missão não pode falhar
 porque o log de eventos falhou).
 
-Duas formas de uso, conforme o chamador controle ou não a transação:
+Três formas de uso, conforme o chamador controle ou não a transação:
 
 - `track(...)`        → participa da transação em curso (não commita). Use
   dentro de um fluxo que já vai commitar (ex.: conclusão de missão).
 - `track_committed(...)` → abre e fecha a própria transação. Use em fluxos de
   leitura, onde não há commit natural (ex.: visualizar o Dashboard).
+- `track_background(...)` → como `track_committed`, mas **fora do request
+  path** (Fase 4 — otimizações medidas): dispara numa sessão própria e não é
+  aguardado — o cliente recebe a resposta sem esperar este INSERT. Use em
+  endpoints de leitura de alta frequência (ex.: `GET /dashboard`) onde o
+  evento é só telemetria, nunca dado que a resposta precisa refletir.
 """
 
+import asyncio
 import logging
 import uuid
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import AsyncSessionLocal
 from app.models.activity_event import ActivityEventName
 from app.repositories.activity_event_repository import ActivityEventRepository
 
 logger = logging.getLogger("ceap_connect.tracking")
+
+# Referência forte às tasks em voo — sem isso, o event loop pode coletar a
+# task (e cancelar o INSERT no meio) antes dela terminar, já que nenhuma outra
+# variável no processo aponta para ela (armadilha conhecida do
+# `asyncio.create_task`, documentada no próprio módulo `asyncio`).
+_background_tasks: set[asyncio.Task[None]] = set()
 
 
 async def track(
@@ -64,3 +77,32 @@ async def track_committed(
     except Exception:  # noqa: BLE001 — tracking jamais quebra o fluxo de negócio
         logger.exception("Falha ao registrar evento %s", name)
         await db.rollback()
+
+
+def track_background(
+    *,
+    candidate_profile_id: uuid.UUID,
+    name: ActivityEventName,
+    props: dict[str, Any] | None = None,
+) -> None:
+    """Agenda `track_committed` numa sessão própria, sem bloquear o chamador.
+
+    Nunca reaproveita a `AsyncSession` do request: uma `AsyncSession` não é
+    seguro para uso concorrente (o SQLAlchemy levanta erro se duas operações
+    tentarem usá-la ao mesmo tempo) — por isso esta função nem recebe `db`,
+    ela abre a sua própria conexão a partir do pool.
+    """
+    task = asyncio.create_task(_track_committed_in_own_session(candidate_profile_id, name, props))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
+async def _track_committed_in_own_session(
+    candidate_profile_id: uuid.UUID,
+    name: ActivityEventName,
+    props: dict[str, Any] | None,
+) -> None:
+    async with AsyncSessionLocal() as session:
+        await track_committed(
+            session, candidate_profile_id=candidate_profile_id, name=name, props=props
+        )

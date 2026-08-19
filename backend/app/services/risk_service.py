@@ -307,30 +307,39 @@ async def _measure_due_interventions(db: AsyncSession) -> int:
 
 
 async def _to_intervention_items(db: AsyncSession, interventions: list) -> list[InterventionItem]:
-    """Projeta `Intervention` no schema de API, resolvendo o nome de quem registrou."""
-    user_repo = UserRepository(db)
-    items: list[InterventionItem] = []
-    for intervention in interventions:
-        created_by_name = None
-        if intervention.created_by_user_id is not None:
-            creator = await user_repo.get_by_id(intervention.created_by_user_id)
-            created_by_name = creator.name if creator is not None else None
+    """Projeta `Intervention` no schema de API, resolvendo o nome de quem registrou.
 
-        items.append(
-            InterventionItem(
-                id=intervention.id,
-                channel=intervention.channel,
-                outcome=intervention.outcome,
-                notes=intervention.notes,
-                created_by_name=created_by_name,
-                score_at_creation=intervention.score_at_creation,
-                created_at=intervention.created_at,
-                measured_at=intervention.measured_at,
-                score_after=intervention.score_after,
-                had_activity_after=intervention.had_activity_after,
-            )
+    Resolve todos os autores em uma única query (`UserRepository.get_by_ids`)
+    — nunca um `get_by_id` por intervenção dentro do loop (N+1 corrigido na
+    Fase 4 — otimizações medidas).
+    """
+    creator_ids = {
+        intervention.created_by_user_id
+        for intervention in interventions
+        if intervention.created_by_user_id is not None
+    }
+    creators = await UserRepository(db).get_by_ids(list(creator_ids))
+    creator_name_by_id = {creator.id: creator.name for creator in creators}
+
+    return [
+        InterventionItem(
+            id=intervention.id,
+            channel=intervention.channel,
+            outcome=intervention.outcome,
+            notes=intervention.notes,
+            created_by_name=(
+                creator_name_by_id.get(intervention.created_by_user_id)
+                if intervention.created_by_user_id is not None
+                else None
+            ),
+            score_at_creation=intervention.score_at_creation,
+            created_at=intervention.created_at,
+            measured_at=intervention.measured_at,
+            score_after=intervention.score_after,
+            had_activity_after=intervention.had_activity_after,
         )
-    return items
+        for intervention in interventions
+    ]
 
 
 def _serialize_features(features) -> dict:  # noqa: ANN001 — dataclass genérico local

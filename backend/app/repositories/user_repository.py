@@ -36,6 +36,18 @@ class UserRepository:
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_by_ids(self, user_ids: list[uuid.UUID]) -> list[User]:
+        """Busca usuários ativos (não deletados) em lote — uma query para N ids.
+
+        Existe especificamente para quem precisa resolver nomes de vários
+        usuários de uma vez (ex.: `risk_service._to_intervention_items`) sem
+        cair em N+1 fazendo `get_by_id` dentro de um loop.
+        """
+        if not user_ids:
+            return []
+        stmt = select(User).where(User.id.in_(user_ids), User.deleted_at.is_(None))
+        return list((await self._db.execute(stmt)).scalars().all())
+
     async def create(
         self,
         *,

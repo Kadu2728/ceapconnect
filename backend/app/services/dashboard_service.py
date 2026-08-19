@@ -86,10 +86,11 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
     next_reward = await _build_next_reward(db, profile.id, level)
 
     # Tracking comportamental (EPIC 14): abrir o Dashboard é ver a jornada —
-    # sinal real de atividade. Como este é um fluxo de leitura (sem commit
-    # natural), o evento commita sozinho; falha aqui nunca quebra o Dashboard.
-    await activity_event_service.track_committed(
-        db,
+    # sinal real de atividade. `track_background` roda fora do request path
+    # (Fase 4 — otimizações medidas): o cliente não espera este INSERT, que
+    # nunca deveria adicionar latência a um GET só porque também registra
+    # telemetria.
+    activity_event_service.track_background(
         candidate_profile_id=profile.id,
         name=EVENT_STEP_VIEWED,
         props={"step_key": profile.current_journey_step_key},
