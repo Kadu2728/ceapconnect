@@ -33,9 +33,13 @@ services:
         value: "2"
 
       # --- Database (Neon) ---
-      # Cole a connection string assíncrona do Neon no painel do Render:
-      #   postgresql+asyncpg://<user>:<password>@<host>/<db>
+      # Cole a connection string assíncrona do endpoint POOLED da Neon no
+      # painel do Render (painel da Neon → "Pooled connection" — hostname
+      # termina em "-pooler", ex.: ep-xxx-pooler.<region>.aws.neon.tech):
+      #   postgresql+asyncpg://<user>:<password>@<host>-pooler.../<db>
       # (sem sslmode/channel_binding na URL — o TLS é ativado via DATABASE_SSL)
+      # O endpoint direto (sem "-pooler") estoura o limite de conexões
+      # simultâneas sob carga — nunca usar em produção.
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_SSL

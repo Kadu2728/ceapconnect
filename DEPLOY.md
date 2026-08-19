@@ -14,10 +14,17 @@ URL da API, e o backend precisa do domínio do frontend para liberar o CORS.
 ## Pré-requisitos
 
 - Repositório no GitHub (frontend + backend no mesmo repo — monorepo).
-- Connection string **assíncrona** do Neon, no formato:
-  `postgresql+asyncpg://<user>:<password>@<host>/<db>`
+- Connection string **assíncrona** do endpoint **pooled** da Neon (painel da
+  Neon → "Connection Details" → "Pooled connection" — hostname termina em
+  `-pooler`), no formato:
+  `postgresql+asyncpg://<user>:<password>@<host>-pooler.../<db>`
   (sem `?sslmode=...&channel_binding=...` na URL — o TLS é ativado via
   `DATABASE_SSL=true`).
+  > **Por quê pooled:** o endpoint direto da Neon abre uma conexão Postgres
+  > física por request; sob carga isso estoura o limite de conexões
+  > simultâneas do plano (Postgres serverless é bem mais restrito nisso que
+  > um Postgres tradicional). O pooled é um PgBouncer gerenciado pela própria
+  > Neon — reaproveita conexões físicas entre requests.
 
 ---
 
@@ -36,7 +43,8 @@ git push -u origin main
 2. O Render detecta o [`render.yaml`](./render.yaml) e cria o serviço
    `ceap-connect-api` (Docker, plano free).
 3. Preencha as variáveis marcadas como segredo:
-   - `DATABASE_URL` → connection string assíncrona do Neon.
+   - `DATABASE_URL` → connection string assíncrona do endpoint **pooled** da
+     Neon (ver Pré-requisitos acima — hostname com `-pooler`).
    - `CORS_ORIGINS` → deixe temporariamente `https://localhost:3000`; será
      atualizado no passo 4 com o domínio real da Vercel.
    - `JWT_SECRET` é gerado automaticamente pelo Render.
