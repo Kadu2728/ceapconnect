@@ -30,7 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.core.rbac import CohortScope
 from app.core.risk_scoring import HeuristicRiskScorer, RiskScorer, RiskTier
-from app.models.candidate_profile import CandidateProfile
+from app.models.candidate_profile import CandidateProfile, CandidateStatus
 from app.repositories.activity_event_repository import ActivityEventRepository
 from app.repositories.candidate_profile_repository import CandidateProfileRepository
 from app.repositories.cohort_repository import CohortRepository
@@ -81,16 +81,28 @@ async def recompute_all(db: AsyncSession, *, scorer: RiskScorer | None = None) -
         features_list = await derive_features_for_group(db, group)
         for features in features_list:
             result = active_scorer.score(features)
+            factors_payload = [
+                {"key": f.key, "label": f.label, "points": round(f.points, 2)}
+                for f in result.factors
+            ]
+            features_payload = _serialize_features(features)
             await score_repo.upsert(
                 candidate_profile_id=uuid.UUID(features.candidate_profile_id),
                 score=result.score,
                 tier=result.tier,
-                factors=[
-                    {"key": f.key, "label": f.label, "points": round(f.points, 2)}
-                    for f in result.factors
-                ],
+                factors=factors_payload,
                 explanation=result.explanation,
-                features=_serialize_features(features),
+                features=features_payload,
+                model_version=active_scorer.model_version,
+            )
+            await score_repo.append_history(
+                candidate_profile_id=uuid.UUID(features.candidate_profile_id),
+                score=result.score,
+                tier=result.tier,
+                factors=factors_payload,
+                explanation=result.explanation,
+                features=features_payload,
+                model_version=active_scorer.model_version,
             )
             processed += 1
 
@@ -181,6 +193,8 @@ async def get_candidate_risk(
         candidate_email=user.email,
         cohort_id=profile.cohort_id,
         cohort_name=cohort_name,
+        status=profile.status,
+        status_changed_at=profile.status_changed_at,
         score=risk.score if risk is not None else None,
         tier=risk.tier if risk is not None else None,
         factors=([RiskFactorItem(**factor) for factor in risk.factors] if risk is not None else []),
@@ -189,6 +203,33 @@ async def get_candidate_risk(
         recent_activity=recent_activity,
         interventions=interventions,
     )
+
+
+async def update_candidate_status(
+    db: AsyncSession,
+    scope: CohortScope,
+    candidate_profile_id: uuid.UUID,
+    status: CandidateStatus,
+) -> CandidateProfile:
+    """Registra o outcome real do candidato — rótulo manual usado no backtest do modelo de risco.
+
+    Mesma regra de escopo das outras ações do Console de Intervenção: só quem
+    tem acesso à coorte do candidato pode mudar. Uma vez fora de `active`, o
+    candidato para de entrar no recálculo periódico (`recompute_all`) — o
+    último score calculado fica congelado, é ele que vira o rótulo comparado
+    ao outcome no backtest.
+    """
+    profile = await CandidateProfileRepository(db).get_by_id(candidate_profile_id)
+    if profile is None:
+        raise NotFoundException("Candidato não encontrado.")
+    if not scope.allows(profile.cohort_id):
+        raise ForbiddenException("Você não tem acesso a este candidato.")
+
+    updated = await CandidateProfileRepository(db).update_status(
+        profile, status=status, changed_at=datetime.now(UTC)
+    )
+    await db.commit()
+    return updated
 
 
 async def create_intervention(

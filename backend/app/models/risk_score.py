@@ -2,6 +2,7 @@
 
 Estado **atual** do risco de cada candidato — uma linha por candidato,
 sobrescrita a cada recálculo (não é histórico append-only; ver
+`app.models.risk_score_history.RiskScoreHistory` para a série temporal, e
 `app.models.intervention.Intervention.score_at_creation` para a comparação
 "antes/depois" usada na medição de impacto de uma intervenção).
 
@@ -60,6 +61,13 @@ class RiskScore(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    )
+    # Qual implementação de `RiskScorer` gerou este score (ver
+    # `app.core.risk_scoring.RiskScorer.model_version`) — permite comparar
+    # heurística vs. modelo treinado no harness de backtest sem ambiguidade
+    # sobre qual gerou qual número.
+    model_version: Mapped[str] = mapped_column(
+        String(50), default="heuristic-v1", server_default="heuristic-v1", nullable=False
     )
 
     def __repr__(self) -> str:

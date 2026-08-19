@@ -13,9 +13,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.risk_scoring import RiskTier
-from app.models.candidate_profile import CandidateProfile
+from app.models.candidate_profile import STATUS_ACTIVE, CandidateProfile
 from app.models.cohort import Cohort
 from app.models.risk_score import RiskScore
+from app.models.risk_score_history import RiskScoreHistory
 from app.models.user import User
 
 
@@ -39,11 +40,12 @@ class RiskScoreRepository:
         factors: list[dict[str, Any]],
         explanation: str,
         features: dict[str, Any],
+        model_version: str,
     ) -> RiskScore:
         """Cria ou atualiza o score do candidato (flush, sem commit).
 
         `risk_scores` é upsert por natureza — guarda o estado *atual*, não um
-        histórico (ver módulo docstring de `app.models.risk_score`).
+        histórico (ver `append_history` para a série temporal).
         """
         existing = await self.get_by_profile_id(candidate_profile_id)
         if existing is None:
@@ -55,8 +57,38 @@ class RiskScoreRepository:
         existing.factors = factors
         existing.explanation = explanation
         existing.features = features
+        existing.model_version = model_version
         await self._db.flush()
         return existing
+
+    async def append_history(
+        self,
+        *,
+        candidate_profile_id: uuid.UUID,
+        score: int,
+        tier: RiskTier,
+        factors: list[dict[str, Any]],
+        explanation: str,
+        features: dict[str, Any],
+        model_version: str,
+    ) -> RiskScoreHistory:
+        """Grava um snapshot imutável do score em `risk_score_history` (flush, sem commit).
+
+        Nunca atualiza uma linha existente — cada recálculo é uma nova linha,
+        é essa série temporal que sustenta o harness de backtest.
+        """
+        entry = RiskScoreHistory(
+            candidate_profile_id=candidate_profile_id,
+            score=score,
+            tier=tier,
+            factors=factors,
+            explanation=explanation,
+            features=features,
+            model_version=model_version,
+        )
+        self._db.add(entry)
+        await self._db.flush()
+        return entry
 
     async def list_queue(
         self,
@@ -69,7 +101,10 @@ class RiskScoreRepository:
 
         `cohort_ids=None` = irrestrito (admin). Uma lista (mesmo vazia) restringe
         às coortes informadas — lista vazia sempre retorna fila vazia, nunca
-        "todos" (mesma semântica de `CohortScope`).
+        "todos" (mesma semântica de `CohortScope`). Só traz candidatos com
+        `status=active`: quem já teve o outcome decidido (aprovado/evadido/
+        desistente) some da fila imediatamente, sem esperar o próximo
+        recálculo periódico.
         """
         if cohort_ids is not None and len(cohort_ids) == 0:
             return []
@@ -79,6 +114,7 @@ class RiskScoreRepository:
             .join(CandidateProfile, CandidateProfile.id == RiskScore.candidate_profile_id)
             .join(User, User.id == CandidateProfile.user_id)
             .outerjoin(Cohort, Cohort.id == CandidateProfile.cohort_id)
+            .where(CandidateProfile.status == STATUS_ACTIVE)
             .order_by(RiskScore.score.desc())
         )
         if cohort_ids is not None:

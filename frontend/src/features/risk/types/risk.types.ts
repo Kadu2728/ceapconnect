@@ -54,12 +54,16 @@ export interface InterventionItem {
   score_delta: number | null;
 }
 
+export type CandidateStatus = "active" | "approved" | "evaded" | "withdrawn";
+
 export interface CandidateRiskDetail {
   candidate_profile_id: string;
   candidate_name: string;
   candidate_email: string;
   cohort_id: string | null;
   cohort_name: string | null;
+  status: CandidateStatus;
+  status_changed_at: string | null;
   score: number | null;
   tier: RiskTier | null;
   factors: RiskFactor[];
@@ -67,6 +71,16 @@ export interface CandidateRiskDetail {
   computed_at: string | null;
   recent_activity: ActivityTimelineItem[];
   interventions: InterventionItem[];
+}
+
+export interface CandidateStatusUpdateInput {
+  candidateProfileId: string;
+  status: CandidateStatus;
+}
+
+export interface CandidateStatusItem {
+  status: CandidateStatus;
+  status_changed_at: string | null;
 }
 
 export interface InterventionCreateInput {

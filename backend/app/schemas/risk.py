@@ -1,10 +1,11 @@
 """Schemas Pydantic do Console de Intervenção (EPIC 14 — Predição de evasão).
 
 Contrato de:
-- `GET  /api/v1/admin/risk/queue`                     → fila priorizada por risco;
-- `GET  /api/v1/admin/candidates/{id}/risk`           → detalhe de um candidato;
-- `POST /api/v1/admin/interventions`                  → registra um contato;
-- `POST /api/v1/internal/risk/recompute`              → dispara o recálculo (API key).
+- `GET   /api/v1/admin/risk/queue`                     → fila priorizada por risco;
+- `GET   /api/v1/admin/candidates/{id}/risk`           → detalhe de um candidato;
+- `PATCH /api/v1/admin/candidates/{id}/status`         → registra o outcome (rótulo p/ backtest);
+- `POST  /api/v1/admin/interventions`                  → registra um contato;
+- `POST  /api/v1/internal/risk/recompute`              → dispara o recálculo (API key).
 
 **Regra de negócio embutida no contrato**: nenhum destes schemas é usado por
 nenhuma rota candidate-facing — o candidato nunca vê o próprio score
@@ -19,6 +20,7 @@ from typing import Any
 from pydantic import BaseModel, Field, computed_field
 
 from app.core.risk_scoring import RiskTier
+from app.models.candidate_profile import CandidateStatus
 from app.models.intervention import InterventionChannel, InterventionOutcome
 
 
@@ -92,6 +94,8 @@ class CandidateRiskDetail(BaseModel):
     candidate_email: str
     cohort_id: uuid.UUID | None
     cohort_name: str | None
+    status: CandidateStatus
+    status_changed_at: datetime | None
     score: int | None
     tier: RiskTier | None
     factors: list[RiskFactorItem]
@@ -99,6 +103,19 @@ class CandidateRiskDetail(BaseModel):
     computed_at: datetime | None
     recent_activity: list[ActivityTimelineItem]
     interventions: list[InterventionItem]
+
+
+class CandidateStatusUpdateRequest(BaseModel):
+    """Corpo de `PATCH /api/v1/admin/candidates/{id}/status`."""
+
+    status: CandidateStatus
+
+
+class CandidateStatusItem(BaseModel):
+    """Payload de `PATCH /api/v1/admin/candidates/{id}/status`."""
+
+    status: CandidateStatus
+    status_changed_at: datetime | None
 
 
 class InterventionCreateRequest(BaseModel):

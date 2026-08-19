@@ -5,12 +5,12 @@ camada de services nunca deve montar SQL/ORM diretamente.
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.candidate_profile import CandidateProfile
+from app.models.candidate_profile import STATUS_ACTIVE, CandidateProfile, CandidateStatus
 from app.models.user import ROLE_CANDIDATE, User
 
 
@@ -38,20 +38,33 @@ class CandidateProfileRepository:
         return (await self._db.execute(stmt)).scalar_one_or_none()
 
     async def list_active_candidates(self) -> list[CandidateProfile]:
-        """Perfis de candidatos ativos (role=candidate, não deletados) — base
-        do recálculo de risco (EPIC 14). Nunca inclui coordenadores/admins:
-        risco é uma métrica sobre quem está no processo seletivo.
+        """Perfis de candidatos ativos (role=candidate, não deletados,
+        `status=active`) — base do recálculo de risco (EPIC 14). Nunca inclui
+        coordenadores/admins: risco é uma métrica sobre quem está no processo
+        seletivo. Candidatos com outcome já decidido (aprovado/evadido/desistente)
+        saem do recálculo — o último score calculado antes da decisão fica
+        congelado, é ele que vira o rótulo do backtest.
         """
         stmt = (
             select(CandidateProfile)
             .join(User, User.id == CandidateProfile.user_id)
             .where(
                 CandidateProfile.deleted_at.is_(None),
+                CandidateProfile.status == STATUS_ACTIVE,
                 User.deleted_at.is_(None),
                 User.role == ROLE_CANDIDATE,
             )
         )
         return list((await self._db.execute(stmt)).scalars().all())
+
+    async def update_status(
+        self, profile: CandidateProfile, *, status: CandidateStatus, changed_at: datetime
+    ) -> CandidateProfile:
+        """Atualiza o outcome do candidato (flush, sem commit) — rótulo manual usado no backtest."""
+        profile.status = status
+        profile.status_changed_at = changed_at
+        await self._db.flush()
+        return profile
 
     async def create(
         self,

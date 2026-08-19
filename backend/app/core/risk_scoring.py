@@ -105,6 +105,12 @@ class RiskScorer(ABC):
     sistema.
     """
 
+    #: Identificador da versão do modelo (ex.: "heuristic-v1"). Toda
+    #: implementação concreta define o seu — é gravado em cada `RiskScore` e
+    #: `RiskScoreHistory` calculado, para o harness de backtest saber qual
+    #: modelo gerou qual score.
+    model_version: str
+
     @abstractmethod
     def score(self, features: CandidateRiskFeatures) -> RiskScoreResult:
         """Calcula o score de risco (0–100) e os fatores que o explicam."""
@@ -143,6 +149,8 @@ class HeuristicRiskScorer(RiskScorer):
     é assim que o sistema sempre consegue dizer "por que" um candidato está em
     risco, em vez de devolver um número opaco.
     """
+
+    model_version: Final = "heuristic-v1"
 
     def score(self, features: CandidateRiskFeatures) -> RiskScoreResult:
         factors = [

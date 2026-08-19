@@ -7,8 +7,9 @@ nunca via endpoint dedicado nesta fase.
 
 import uuid
 from datetime import date, datetime
+from typing import Final, Literal
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,11 +21,23 @@ from app.models.mixins import SoftDeleteMixin, TimestampMixin
 # `candidate_profile_service.bootstrap_new_candidate`.
 _DEFAULT_JOURNEY_STEP_KEY = "inscricao"
 
+CandidateStatus = Literal["active", "approved", "evaded", "withdrawn"]
+
+STATUS_ACTIVE: Final = "active"
+STATUS_APPROVED: Final = "approved"
+STATUS_EVADED: Final = "evaded"
+STATUS_WITHDRAWN: Final = "withdrawn"
+
+_VALID_STATUSES: Final = (STATUS_ACTIVE, STATUS_APPROVED, STATUS_EVADED, STATUS_WITHDRAWN)
+
 
 class CandidateProfile(Base, TimestampMixin, SoftDeleteMixin):
     """Perfil de gamificação/jornada do candidato, 1:1 com `User`."""
 
     __tablename__ = "candidate_profiles"
+    __table_args__ = (
+        CheckConstraint(f"status IN {_VALID_STATUSES}", name="ck_candidate_profile_status"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True),
@@ -74,6 +87,17 @@ class CandidateProfile(Base, TimestampMixin, SoftDeleteMixin):
     # responsável. `None` = ainda não avisado (ou o contato mudou desde o
     # último aviso — ver `profile_service.update_profile`).
     guardian_notified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Outcome real do processo seletivo (rótulo usado no backtest do modelo de
+    # risco — EPIC 14, fase 2). Mudança sempre manual, feita pelo coordenador
+    # no Console de Intervenção: inferir automaticamente contaminaria o
+    # rótulo com um critério ruidoso (ex.: inatividade não é o mesmo que
+    # evasão confirmada).
+    status: Mapped[CandidateStatus] = mapped_column(
+        String(20), default=STATUS_ACTIVE, server_default=STATUS_ACTIVE, nullable=False
+    )
+    status_changed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

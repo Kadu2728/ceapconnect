@@ -23,6 +23,7 @@ from app.models.push_subscription import PushSubscription
 from app.models.reward import Reward
 from app.models.reward_redemption import RewardRedemption
 from app.models.risk_score import RiskScore
+from app.models.risk_score_history import RiskScoreHistory
 from app.models.simulado import SimuladoAnswer, SimuladoAttempt, SimuladoQuestion
 from app.models.user import User
 
@@ -46,6 +47,7 @@ __all__ = [
     "Reward",
     "RewardRedemption",
     "RiskScore",
+    "RiskScoreHistory",
     "SimuladoAnswer",
     "SimuladoAttempt",
     "SimuladoQuestion",

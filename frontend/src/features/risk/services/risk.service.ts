@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/axios";
 
 import type {
   CandidateRiskDetail,
+  CandidateStatusItem,
+  CandidateStatusUpdateInput,
   InterventionCreateInput,
   InterventionItem,
   RiskQueueResponse,
@@ -18,6 +20,10 @@ const INTERVENTIONS_ENDPOINT = "/api/v1/admin/interventions";
 
 function candidateRiskEndpoint(candidateProfileId: string): string {
   return `/api/v1/admin/candidates/${candidateProfileId}/risk`;
+}
+
+function candidateStatusEndpoint(candidateProfileId: string): string {
+  return `/api/v1/admin/candidates/${candidateProfileId}/status`;
 }
 
 export interface FetchRiskQueueParams {
@@ -52,6 +58,16 @@ export async function createIntervention(
   const { data } = await apiClient.post<ApiEnvelope<InterventionItem>>(
     INTERVENTIONS_ENDPOINT,
     input,
+  );
+  return data.data;
+}
+
+export async function updateCandidateStatus(
+  input: CandidateStatusUpdateInput,
+): Promise<CandidateStatusItem> {
+  const { data } = await apiClient.patch<ApiEnvelope<CandidateStatusItem>>(
+    candidateStatusEndpoint(input.candidateProfileId),
+    { status: input.status },
   );
   return data.data;
 }

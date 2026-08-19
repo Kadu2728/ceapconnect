@@ -21,6 +21,8 @@ from app.core.risk_scoring import RiskTier
 from app.schemas.response import ApiResponse
 from app.schemas.risk import (
     CandidateRiskDetail,
+    CandidateStatusItem,
+    CandidateStatusUpdateRequest,
     InterventionCreateRequest,
     InterventionItem,
     RiskQueueResponse,
@@ -61,6 +63,29 @@ async def get_candidate_risk(
     return ApiResponse(
         success=True, message="Risco do candidato recuperado com sucesso.", data=data
     )
+
+
+@router.patch(
+    "/admin/candidates/{candidate_profile_id}/status",
+    response_model=ApiResponse[CandidateStatusItem],
+    summary="Registra o outcome real do candidato (rótulo usado no backtest do modelo de risco)",
+)
+async def update_candidate_status(
+    candidate_profile_id: uuid.UUID,
+    payload: CandidateStatusUpdateRequest,
+    scope: CohortScope = Depends(get_cohort_scope),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[CandidateStatusItem]:
+    """Marca aprovado/evadido/desistente — sempre uma ação manual do coordenador.
+
+    A partir daqui o candidato sai do recálculo periódico de risco; o último
+    score calculado fica congelado como o valor comparado ao outcome real.
+    """
+    profile = await risk_service.update_candidate_status(
+        db, scope, candidate_profile_id, payload.status
+    )
+    data = CandidateStatusItem(status=profile.status, status_changed_at=profile.status_changed_at)
+    return ApiResponse(success=True, message="Status do candidato atualizado.", data=data)
 
 
 @router.post(

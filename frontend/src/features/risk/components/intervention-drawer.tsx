@@ -22,7 +22,9 @@ import { RiskBadge } from "@/features/risk/components/risk-badge";
 import { RiskExplanationDetailed } from "@/features/risk/components/risk-explanation";
 import { useCandidateRisk } from "@/features/risk/hooks/use-candidate-risk";
 import { useCreateIntervention } from "@/features/risk/hooks/use-create-intervention";
+import { useUpdateCandidateStatus } from "@/features/risk/hooks/use-update-candidate-status";
 import type {
+  CandidateStatus,
   InterventionChannel,
   InterventionOutcome,
 } from "@/features/risk/types/risk.types";
@@ -70,6 +72,19 @@ const OUTCOME_OPTIONS: { value: InterventionOutcome; label: string }[] = [
   { value: "reached", label: "Consegui contato" },
   { value: "no_answer", label: "Não atendeu" },
   { value: "other", label: "Outro" },
+];
+
+const STATUS_LABELS: Record<CandidateStatus, string> = {
+  active: "Em processo",
+  approved: "Aprovado",
+  evaded: "Evadiu",
+  withdrawn: "Desistiu",
+};
+
+const STATUS_ACTIONS: { value: CandidateStatus; label: string }[] = [
+  { value: "approved", label: "Aprovado" },
+  { value: "evaded", label: "Evadiu" },
+  { value: "withdrawn", label: "Desistiu" },
 ];
 
 interface InterventionDrawerProps {
@@ -162,6 +177,12 @@ function DrawerContent({
           <p className="mt-0.5 text-xs text-muted-foreground">{data.cohort_name}</p>
         ) : null}
       </div>
+
+      <CandidateStatusSection
+        candidateProfileId={candidateProfileId}
+        status={data.status}
+        statusChangedAt={data.status_changed_at}
+      />
 
       {data.score !== null && data.tier !== null ? (
         <RiskBadge score={data.score} tier={data.tier} className="w-fit" />
@@ -259,6 +280,53 @@ function DrawerContent({
   );
 }
 
+function CandidateStatusSection({
+  candidateProfileId,
+  status,
+  statusChangedAt,
+}: {
+  candidateProfileId: string;
+  status: CandidateStatus;
+  statusChangedAt: string | null;
+}) {
+  const mutation = useUpdateCandidateStatus();
+
+  if (status !== "active") {
+    return (
+      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+        <span className="font-medium">{STATUS_LABELS[status]}</span>
+        {statusChangedAt ? (
+          <span className="text-muted-foreground">
+            {" "}
+            em {WHEN_FORMATTER.format(new Date(statusChangedAt))}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>Outcome do processo seletivo</Label>
+      <div className="flex flex-wrap gap-2">
+        {STATUS_ACTIONS.map((action) => (
+          <ToggleButton
+            key={action.value}
+            active={false}
+            label={action.label}
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate({ candidateProfileId, status: action.value })}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Registra o resultado real do candidato — vira o rótulo usado para avaliar a
+        precisão do modelo de risco. Ele sai da fila imediatamente.
+      </p>
+    </div>
+  );
+}
+
 function NewInterventionForm({
   candidateProfileId,
   disabled,
@@ -347,20 +415,23 @@ function ToggleButton({
   active,
   label,
   icon: Icon,
+  disabled,
   onClick,
 }: {
   active: boolean;
   label: string;
   icon?: LucideIcon;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+        "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         active
           ? "border-brand bg-brand/10 text-brand"
           : "border-input text-muted-foreground hover:bg-accent/50",
