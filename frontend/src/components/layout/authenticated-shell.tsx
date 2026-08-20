@@ -1,14 +1,32 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { AuthenticatedNavbar } from "@/components/layout/authenticated-navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { AssistantWidget } from "@/features/assistant/components/assistant-widget";
 import { useAuthStore } from "@/features/auth/store/auth-store";
-import { LevelUpCelebration } from "@/features/level-up/components/level-up-celebration";
 import { cn } from "@/lib/utils";
+
+// Montados em toda página autenticada, mas só entram em ação sob demanda (o
+// candidato abre o chat; um level-up acontece) — carregá-los fora do bundle
+// inicial tira framer-motion + a lógica de chat/confete do JS que toda página
+// autenticada precisa baixar antes do primeiro paint (code splitting, Fase 4).
+const AssistantWidget = dynamic(
+  () =>
+    import("@/features/assistant/components/assistant-widget").then(
+      (mod) => mod.AssistantWidget,
+    ),
+  { ssr: false },
+);
+const LevelUpCelebration = dynamic(
+  () =>
+    import("@/features/level-up/components/level-up-celebration").then(
+      (mod) => mod.LevelUpCelebration,
+    ),
+  { ssr: false },
+);
 
 interface AuthenticatedShellProps {
   userName: string;
