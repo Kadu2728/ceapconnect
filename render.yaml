@@ -85,6 +85,15 @@ services:
       - key: COHORT_XP_REFRESH_INTERVAL_MINUTES
         value: "15"
 
+      # --- Cache (Fase 4 — Redis/Upstash) ---
+      # Crie uma instância grátis em upstash.com (Redis → Create Database) e
+      # cole a "Redis URL" (rediss://...). Sem preencher, o app funciona
+      # normalmente sem cache — nenhum outro passo é necessário.
+      - key: REDIS_URL
+        sync: false
+      - key: ADMIN_OVERVIEW_CACHE_TTL_SECONDS
+        value: "60"
+
       # --- Envolver o responsável (EPIC 17) ---
       # Sem RESEND_API_KEY o aviso por e-mail responde `sent=false` com uma
       # mensagem clara; o link de WhatsApp funciona 100% sem nenhuma chave.

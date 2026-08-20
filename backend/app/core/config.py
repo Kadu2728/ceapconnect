@@ -147,6 +147,21 @@ class Settings(BaseSettings):
             "visível a cada carga do Dashboard, tolera menos staleness."
         ),
     )
+    redis_url: str = Field(
+        default="",
+        description=(
+            "URL de conexão do Redis (Upstash — aceita rediss://...). Vazio = "
+            "cache desabilitado, o app funciona normalmente sem ele."
+        ),
+    )
+    admin_overview_cache_ttl_seconds: int = Field(
+        default=60,
+        description=(
+            "TTL do cache de GET /admin/overview (painel administrativo). "
+            "Endpoint com ~18 queries agregadas sobre a base inteira — 60s de "
+            "staleness é imperceptível numa tela de métricas de staff."
+        ),
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:

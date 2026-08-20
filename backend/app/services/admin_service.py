@@ -12,6 +12,8 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import cache
+from app.core.config import settings
 from app.core.exceptions import ConflictException, NotFoundException
 from app.core.gamification import LEVEL_TIERS, resolve_level
 from app.models.reward_redemption import STATUS_FULFILLED
@@ -32,9 +34,38 @@ _SIGNUPS_WINDOW_DAYS = 14
 _TOP_REWARDS_LIMIT = 5
 _INTERVENTION_IMPACT_WINDOW_DAYS = 30
 
+# "v1": versiona a chave, não o valor — um deploy que mude o formato de
+# `AdminOverview` vira uma chave nova em vez de tentar (e falhar) desserializar
+# um JSON velho. Cache é só um acelerador (ver app.core.cache); nunca há um
+# "invalidar na escrita" aqui de propósito — o overview é lido por poucos
+# admins/coordenadores, TTL curto já resolve staleness sem espalhar lógica de
+# invalidação pelos vários services que alteram os dados agregados.
+_OVERVIEW_CACHE_KEY = "admin:overview:v1"
+
 
 async def get_overview(db: AsyncSession) -> AdminOverview:
-    """Monta o agregado de métricas da plataforma para o painel admin."""
+    """Monta o agregado de métricas da plataforma para o painel admin.
+
+    Cacheado por `settings.admin_overview_cache_ttl_seconds` (Fase 4 —
+    otimizações medidas): o endpoint dispara ~18 queries agregadas sobre a
+    base inteira, caro para uma tela de métricas de staff que tolera folga.
+    """
+    cached = await cache.get_cached(_OVERVIEW_CACHE_KEY)
+    if cached is not None:
+        return AdminOverview.model_validate_json(cached)
+
+    overview = await _build_overview(db)
+
+    await cache.set_cached(
+        _OVERVIEW_CACHE_KEY,
+        overview.model_dump_json(),
+        ttl_seconds=settings.admin_overview_cache_ttl_seconds,
+    )
+    return overview
+
+
+async def _build_overview(db: AsyncSession) -> AdminOverview:
+    """Monta o agregado a partir do banco — sempre a fonte de verdade, cache à parte."""
     repo = AdminRepository(db)
     now = datetime.now(UTC)
 

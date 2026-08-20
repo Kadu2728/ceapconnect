@@ -35,3 +35,9 @@ apscheduler==3.11.0
 # Envia notificações push reais via Web Push (protocolo padrão do navegador,
 # sem SDK/serviço pago — autenticado com um par de chaves VAPID gerado uma vez).
 pywebpush==2.4.0
+
+# --- Cache (Fase 4 — otimizações medidas) ---
+# Cliente Redis assíncrono (redis.asyncio) compatível direto com Upstash via
+# rediss://. Opcional em runtime — sem REDIS_URL configurado, o app segue
+# funcionando sem cache (ver app/core/cache.py).
+redis==5.2.1
