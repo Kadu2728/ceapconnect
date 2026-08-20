@@ -137,6 +137,17 @@ class Settings(BaseSettings):
         ),
     )
 
+    # --- Otimizações medidas (Fase 4) ---
+    cohort_xp_refresh_interval_minutes: int = Field(
+        default=15,
+        description=(
+            "Intervalo do job in-process que atualiza a materialized view "
+            "cohort_xp_standing (percentil de XP por coorte, exibido no "
+            "Dashboard). Mais curto que o do risco: alimenta um elemento "
+            "visível a cada carga do Dashboard, tolera menos staleness."
+        ),
+    )
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Converte a string separada por vírgula de CORS_ORIGINS em lista."""

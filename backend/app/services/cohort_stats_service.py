@@ -46,9 +46,10 @@ async def build_cohort_standing(
     if profile.cohort_id is None or profile.xp_total <= 0:
         return None
 
-    total, at_or_below = await CohortStatsRepository(db).xp_standing(
-        cohort_id=profile.cohort_id, xp_total=profile.xp_total
-    )
+    standing = await CohortStatsRepository(db).xp_standing(candidate_profile_id=profile.id)
+    if standing is None:
+        return None
+    total, at_or_below = standing
     if total < _MIN_COHORT_SIZE:
         return None
 

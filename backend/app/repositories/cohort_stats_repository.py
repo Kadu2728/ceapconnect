@@ -7,13 +7,10 @@ outro candidato — ver `cohort_stats_service` para o racional.
 
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.candidate_profile import CandidateProfile
-from app.models.user import ROLE_CANDIDATE, User
-
-_MIN_COHORT_SIZE = 5
+from app.models.cohort_xp_standing import CohortXpStanding
 
 
 class CohortStatsRepository:
@@ -22,25 +19,19 @@ class CohortStatsRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
-    async def xp_standing(self, *, cohort_id: uuid.UUID, xp_total: int) -> tuple[int, int]:
-        """Retorna `(total_de_candidatos, quantos_tem_xp_menor_ou_igual)` na coorte.
+    async def xp_standing(self, *, candidate_profile_id: uuid.UUID) -> tuple[int, int] | None:
+        """Lê `(total_de_candidatos, quantos_tem_xp_menor_ou_igual)` pré-calculado.
 
-        Uma única query com `count(*) FILTER (...)` em vez de duas — o percentil
-        é derivado disso no service, nunca no SQL (ver `cohort_stats_service`).
+        Fonte é a materialized view `cohort_xp_standing` (Fase 4 — otimizações
+        medidas: antes, esta era uma agregação ao vivo sobre toda a coorte em
+        **toda** carga do Dashboard; agora é uma leitura indexada por
+        `candidate_profile_id`, atualizada periodicamente pelo scheduler).
+        `None` = candidato ainda não entrou no último refresh (coorte
+        nova/atribuição recente) — o service trata igual a qualquer outro caso
+        sem dado suficiente (nenhuma faixa exibida).
         """
-        stmt = (
-            select(
-                func.count().label("total"),
-                func.count().filter(CandidateProfile.xp_total <= xp_total).label("at_or_below"),
-            )
-            .select_from(CandidateProfile)
-            .join(User, User.id == CandidateProfile.user_id)
-            .where(
-                CandidateProfile.cohort_id == cohort_id,
-                CandidateProfile.deleted_at.is_(None),
-                User.deleted_at.is_(None),
-                User.role == ROLE_CANDIDATE,
-            )
+        stmt = select(CohortXpStanding.total, CohortXpStanding.at_or_below).where(
+            CohortXpStanding.candidate_profile_id == candidate_profile_id
         )
-        row = (await self._db.execute(stmt)).one()
-        return int(row.total), int(row.at_or_below)
+        row = (await self._db.execute(stmt)).one_or_none()
+        return (int(row.total), int(row.at_or_below)) if row is not None else None

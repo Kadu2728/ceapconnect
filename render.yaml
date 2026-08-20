@@ -81,6 +81,10 @@ services:
       - key: RISK_RECOMPUTE_INTERVAL_MINUTES
         value: "60"
 
+      # --- Otimizações medidas (Fase 4 — materialized view cohort_xp_standing) ---
+      - key: COHORT_XP_REFRESH_INTERVAL_MINUTES
+        value: "15"
+
       # --- Envolver o responsável (EPIC 17) ---
       # Sem RESEND_API_KEY o aviso por e-mail responde `sent=false` com uma
       # mensagem clara; o link de WhatsApp funciona 100% sem nenhuma chave.

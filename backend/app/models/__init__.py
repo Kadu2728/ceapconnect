@@ -12,6 +12,7 @@ from app.models.candidate_document import CandidateDocument
 from app.models.candidate_profile import CandidateProfile
 from app.models.chat_message import ChatMessage
 from app.models.cohort import Cohort, CoordinatorCohort
+from app.models.cohort_xp_standing import CohortXpStanding
 from app.models.event import Event
 from app.models.event_registration import EventRegistration
 from app.models.intervention import Intervention
@@ -35,6 +36,7 @@ __all__ = [
     "CandidateProfile",
     "ChatMessage",
     "Cohort",
+    "CohortXpStanding",
     "CoordinatorCohort",
     "Event",
     "EventRegistration",
