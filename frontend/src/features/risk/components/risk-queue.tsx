@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { RiskBadge } from "@/features/risk/components/risk-badge";
 import { RiskExplanation } from "@/features/risk/components/risk-explanation";
 import { useRiskQueue } from "@/features/risk/hooks/use-risk-queue";
+import { useRiskQueueStream } from "@/features/risk/hooks/use-risk-queue-stream";
 import type { RiskQueueItem, RiskTier } from "@/features/risk/types/risk.types";
 import { resolveTierStyle } from "@/features/risk/utils/risk-tone";
 import {
@@ -38,6 +39,7 @@ interface RiskQueueProps {
 export function RiskQueue({ onSelectCandidate }: RiskQueueProps) {
   const [tier, setTier] = useState<RiskTier | undefined>(undefined);
   const query = useRiskQueue({ tier });
+  const { isLive } = useRiskQueueStream({ tier });
 
   const shouldReduceMotion = Boolean(useReducedMotion());
   const containerVariants = getStaggerContainerVariants(shouldReduceMotion);
@@ -59,7 +61,20 @@ export function RiskQueue({ onSelectCandidate }: RiskQueueProps) {
           <div className="flex items-center gap-2">
             <Users className="size-5 text-brand" aria-hidden="true" />
             <div>
-              <p className="text-sm text-muted-foreground">Candidatos monitorados</p>
+              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                Candidatos monitorados
+                {isLive ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
+                    <span className="relative flex size-1.5">
+                      {shouldReduceMotion ? null : (
+                        <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
+                      )}
+                      <span className="relative inline-flex size-1.5 rounded-full bg-success" />
+                    </span>
+                    ao vivo
+                  </span>
+                ) : null}
+              </p>
               <p className="text-2xl font-bold tracking-tight tabular-nums">{total}</p>
             </div>
           </div>
