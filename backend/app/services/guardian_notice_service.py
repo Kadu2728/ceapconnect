@@ -19,6 +19,7 @@ import httpx
 
 from app.core.config import settings
 from app.models.candidate_profile import CandidateProfile
+from app.models.guardian import Guardian
 from app.models.user import User
 
 logger = logging.getLogger("ceap_connect.guardian_notice")
@@ -39,7 +40,9 @@ def is_configured() -> bool:
     return bool(settings.resend_api_key.strip())
 
 
-def build_whatsapp_link(*, candidate_name: str, profile: CandidateProfile) -> str:
+def build_whatsapp_link(
+    *, candidate_name: str, profile: CandidateProfile, guardian: Guardian | None
+) -> str:
     """Monta um link `wa.me` com a mensagem já preenchida, na voz do candidato.
 
     Sem custo e sem integração: abre o WhatsApp do próprio celular do
@@ -49,19 +52,21 @@ def build_whatsapp_link(*, candidate_name: str, profile: CandidateProfile) -> st
     """
     message = _build_message(candidate_name=candidate_name, profile=profile)
     encoded_message = quote(message)
-    if profile.guardian_phone:
-        return f"https://wa.me/55{profile.guardian_phone}?text={encoded_message}"
+    if guardian is not None and guardian.phone:
+        return f"https://wa.me/55{guardian.phone}?text={encoded_message}"
     return f"https://wa.me/?text={encoded_message}"
 
 
-async def send_guardian_email(*, user: User, profile: CandidateProfile) -> tuple[bool, str]:
-    """Envia o e-mail de aviso ao responsável via Resend.
+async def send_guardian_email(
+    *, user: User, profile: CandidateProfile, guardian: Guardian | None
+) -> tuple[bool, str]:
+    """Envia o e-mail de aviso ao responsável principal via Resend.
 
     Retorna `(sent, message)` — nunca levanta exceção por falha de rede/API:
     uma falha no envio não deve derrubar a tela de Perfil, só informar o
     candidato para tentar de novo (ou usar o WhatsApp).
     """
-    if not profile.guardian_email:
+    if guardian is None or not guardian.email:
         return False, _NO_GUARDIAN_EMAIL_MESSAGE
     if not is_configured():
         return False, _NOT_CONFIGURED_MESSAGE
@@ -76,7 +81,7 @@ async def send_guardian_email(*, user: User, profile: CandidateProfile) -> tuple
                 headers={"Authorization": f"Bearer {settings.resend_api_key}"},
                 json={
                     "from": f"CEAP Connect <{settings.resend_from_email}>",
-                    "to": [profile.guardian_email],
+                    "to": [guardian.email],
                     "subject": subject,
                     "html": html,
                 },

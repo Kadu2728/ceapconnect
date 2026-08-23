@@ -16,6 +16,7 @@ from app.models.candidate_profile import CandidateProfile
 from app.models.reward_redemption import STATUS_CANCELLED
 from app.models.user import User
 from app.repositories.achievement_repository import AchievementRepository
+from app.repositories.guardian_repository import GuardianRepository
 from app.repositories.mission_repository import MissionProgressRepository
 from app.repositories.reward_repository import RewardRedemptionRepository
 from app.schemas.profile import (
@@ -37,20 +38,26 @@ async def get_profile(db: AsyncSession, user: User) -> ProfileResponse:
 async def update_profile(
     db: AsyncSession, user: User, payload: ProfileUpdateRequest
 ) -> ProfileResponse:
-    """Atualiza dados do candidato e do responsável, e desbloqueia "Perfil Completo"."""
+    """Atualiza dados do candidato e do responsável principal, e desbloqueia "Perfil Completo"."""
     profile = await get_profile_or_raise(db, user)
 
     user.name = payload.name
     user.phone = payload.phone
 
+    guardian_repo = GuardianRepository(db)
+    existing_guardian = await guardian_repo.get_primary_for_profile(profile.id)
+    previous_email = existing_guardian.email if existing_guardian is not None else None
+
+    guardian = await guardian_repo.upsert_primary(
+        candidate_profile_id=profile.id,
+        name=payload.guardian_name,
+        phone=payload.guardian_phone,
+        email=payload.guardian_email,
+    )
     # Se o e-mail do responsável mudou, o último aviso enviado não vale mais
     # para o contato novo — evita mostrar "avisado" para um e-mail errado.
-    if payload.guardian_email != profile.guardian_email:
-        profile.guardian_notified_at = None
-
-    profile.guardian_name = payload.guardian_name
-    profile.guardian_phone = payload.guardian_phone
-    profile.guardian_email = payload.guardian_email
+    if guardian is not None and payload.guardian_email != previous_email:
+        guardian.interview_notice_sent_at = None
     await db.flush()
 
     await achievement_service.unlock_profile_complete(db, profile)
@@ -60,16 +67,21 @@ async def update_profile(
 
 
 async def notify_guardian_email(db: AsyncSession, user: User) -> GuardianEmailNoticeResult:
-    """Envia o e-mail de aviso da entrevista ao responsável (EPIC 17)."""
+    """Envia o e-mail de aviso da entrevista ao responsável principal (EPIC 17)."""
     profile = await get_profile_or_raise(db, user)
+    guardian = await GuardianRepository(db).get_primary_for_profile(profile.id)
 
-    sent, message = await guardian_notice_service.send_guardian_email(user=user, profile=profile)
-    if sent:
-        profile.guardian_notified_at = datetime.now(UTC)
+    sent, message = await guardian_notice_service.send_guardian_email(
+        user=user, profile=profile, guardian=guardian
+    )
+    if sent and guardian is not None:
+        guardian.interview_notice_sent_at = datetime.now(UTC)
         await db.commit()
 
     return GuardianEmailNoticeResult(
-        sent=sent, message=message, guardian_notified_at=profile.guardian_notified_at
+        sent=sent,
+        message=message,
+        guardian_notified_at=guardian.interview_notice_sent_at if guardian is not None else None,
     )
 
 
@@ -87,6 +99,7 @@ async def _build_response(
     rewards_redeemed = sum(
         1 for redemption in redemptions.values() if redemption.status != STATUS_CANCELLED
     )
+    guardian = await GuardianRepository(db).get_primary_for_profile(profile.id)
 
     return ProfileResponse(
         id=user.id,
@@ -103,10 +116,10 @@ async def _build_response(
         ),
         interview_date=profile.interview_date,
         interview_location=settings.interview_location,
-        guardian_name=profile.guardian_name,
-        guardian_phone=profile.guardian_phone,
-        guardian_email=profile.guardian_email,
-        guardian_notified_at=profile.guardian_notified_at,
+        guardian_name=guardian.name if guardian is not None else None,
+        guardian_phone=guardian.phone if guardian is not None else None,
+        guardian_email=guardian.email if guardian is not None else None,
+        guardian_notified_at=guardian.interview_notice_sent_at if guardian is not None else None,
     )
 
 

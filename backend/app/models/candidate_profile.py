@@ -77,18 +77,9 @@ class CandidateProfile(Base, TimestampMixin, SoftDeleteMixin):
     # racional provisório de `default_exam_offset_days` — até o produto ter uma
     # data real configurável por edital.
     interview_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    # Contato do responsável (obrigatório entrevistar um responsável legal, já
-    # que o público são menores de idade) — preenchido pelo próprio candidato
-    # na tela de Perfil, nunca coletado no cadastro inicial.
-    guardian_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
-    guardian_phone: Mapped[str | None] = mapped_column(String(11), nullable=True)
-    guardian_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    # Quando o e-mail de aviso da entrevista foi enviado com sucesso ao
-    # responsável. `None` = ainda não avisado (ou o contato mudou desde o
-    # último aviso — ver `profile_service.update_profile`).
-    guardian_notified_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    # Contato e jornada do responsável: ver `app.models.guardian.Guardian`
+    # (1 candidato pode ter mais de um responsável — não cabe mais em colunas
+    # planas aqui; migrado de EPIC 17 na migration que criou `guardians`).
     # Outcome real do processo seletivo (rótulo usado no backtest do modelo de
     # risco — EPIC 14, fase 2). Mudança sempre manual, feita pelo coordenador
     # no Console de Intervenção: inferir automaticamente contaminaria o

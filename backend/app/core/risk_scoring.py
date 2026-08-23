@@ -61,6 +61,15 @@ class CandidateRiskFeatures:
     # None = coorte sem dado suficiente para mediana (ex.: 1 único candidato).
     below_cohort_median: bool | None
     cohort_median_completion_ratio: float | None
+    # Responsável (mentoria do CEAP: fator de evasão de primeira ordem — se
+    # não participa da formação obrigatória, o candidato perde a vaga).
+    # `guardian_has_contact=False` = nenhum responsável cadastrado ainda.
+    guardian_has_contact: bool
+    guardian_training_attended: bool
+    # `True` = a data da formação da coorte já passou e o responsável não
+    # compareceu. `False` também quando não há data definida (sem prazo
+    # vencido, sem risco de atraso a apontar).
+    guardian_training_overdue: bool
 
 
 @dataclass(frozen=True)
@@ -117,18 +126,28 @@ class RiskScorer(ABC):
         raise NotImplementedError
 
 
-# --- Pesos da heurística (soma do budget = 100 pontos) ----------------------
+# --- Pesos da heurística ------------------------------------------------
 #
 # Cada peso é o teto de contribuição daquele fator; a fórmula de cada um
 # decide quanto do teto é efetivamente atingido. Ajustar estes números (ou a
 # fórmula de cada `_score_*`) NUNCA exige mudar `risk_service.py` ou os
 # endpoints — é a vantagem de manter tudo atrás de `RiskScorer`.
+#
+# Os 6 primeiros somam exatamente 100 (o orçamento original do modelo).
+# `_WEIGHT_GUARDIAN_ABSENCE` foi somado por cima, de propósito: a mentoria do
+# CEAP identificou a ausência do responsável na formação obrigatória como
+# quase-determinística para perda de vaga — sozinho, esse fator já deve levar
+# o candidato a risco "alto" (>60), sem depender de nenhum outro sinal.
+# `score()` clampa o total em 100 de qualquer forma, então isso nunca gera um
+# score fora de faixa — só garante que este sinal nunca fica diluído entre os
+# outros seis.
 _WEIGHT_INACTIVITY: Final = 35.0
 _WEIGHT_LOW_COMPLETION: Final = 20.0
 _WEIGHT_ABANDONED_MISSIONS: Final = 15.0
 _WEIGHT_STUCK_STEP: Final = 15.0
 _WEIGHT_BELOW_COHORT_MEDIAN: Final = 10.0
 _WEIGHT_SLOW_PACE: Final = 5.0
+_WEIGHT_GUARDIAN_ABSENCE: Final = 65.0
 
 # Dias de tolerância antes da inatividade começar a pontuar.
 _INACTIVITY_GRACE_DAYS: Final = 2.0
@@ -160,6 +179,7 @@ class HeuristicRiskScorer(RiskScorer):
             self._score_stuck_step(features),
             self._score_below_cohort_median(features),
             self._score_slow_pace(features),
+            self._score_guardian_absence(features),
         ]
         raw_score = sum(f.points for f in factors)
         score = round(min(100.0, max(0.0, raw_score)))
@@ -202,3 +222,26 @@ class HeuristicRiskScorer(RiskScorer):
             return RiskFactor("slow_pace", "", 0.0)
         points = min(_WEIGHT_SLOW_PACE, (avg - _EXPECTED_PACE_DAYS) * _SLOW_PACE_POINTS_PER_DAY)
         return RiskFactor("slow_pace", f"Ritmo lento (a cada {round(avg)} dias)", points)
+
+    def _score_guardian_absence(self, f: CandidateRiskFeatures) -> RiskFactor:
+        if f.guardian_training_attended:
+            return RiskFactor(
+                "guardian_absence", "Responsável concluiu a formação obrigatória", 0.0
+            )
+        if not f.guardian_has_contact:
+            return RiskFactor(
+                "guardian_absence",
+                "Nenhum responsável cadastrado — formação obrigatória em risco",
+                _WEIGHT_GUARDIAN_ABSENCE,
+            )
+        if f.guardian_training_overdue:
+            return RiskFactor(
+                "guardian_absence",
+                "Responsável não compareceu à formação obrigatória (perda de vaga iminente)",
+                _WEIGHT_GUARDIAN_ABSENCE,
+            )
+        return RiskFactor(
+            "guardian_absence",
+            "Responsável ainda não concluiu a formação obrigatória",
+            _WEIGHT_GUARDIAN_ABSENCE * 0.25,
+        )

@@ -37,7 +37,12 @@ from app.schemas.dashboard import (
     RecentAchievement,
     UpcomingEvent,
 )
-from app.services import activity_event_service, cohort_stats_service, reward_service
+from app.services import (
+    activity_event_service,
+    cohort_stats_service,
+    journey_service,
+    reward_service,
+)
 
 _RECENT_ACHIEVEMENTS_LIMIT = 5
 _UPCOMING_EVENTS_LIMIT = 5
@@ -50,6 +55,12 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
         # Não deve ocorrer em condições normais: todo `User` ganha um
         # `CandidateProfile` no registro (ver `auth_service.register_user`).
         raise NotFoundException("Perfil do candidato não encontrado.")
+
+    # Recomputa a etapa da jornada antes de montar a resposta — a coluna é um
+    # cache, não a fonte de verdade (ver `journey_service`). Commita só se
+    # algo de fato avançou, para não pagar um round-trip extra em toda leitura.
+    if await journey_service.sync_one(db, profile):
+        await db.commit()
 
     steps = await JourneyStepRepository(db).list_ordered()
     journey = _build_journey_progress(steps, profile.current_journey_step_key)

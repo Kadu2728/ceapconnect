@@ -25,6 +25,8 @@ from app.core.risk_scoring import CandidateRiskFeatures
 from app.models.activity_event import EVENT_MISSION_ABANDONED
 from app.models.candidate_profile import CandidateProfile
 from app.repositories.activity_event_repository import ActivityEventRepository
+from app.repositories.cohort_repository import CohortRepository
+from app.repositories.guardian_repository import GuardianRepository
 from app.repositories.journey_step_repository import JourneyStepRepository
 from app.repositories.mission_repository import MissionProgressRepository, MissionRepository
 
@@ -71,6 +73,17 @@ async def derive_features_for_group(
     journey_steps = await JourneyStepRepository(db).list_ordered()
     step_label_by_key = {step.key: step.label for step in journey_steps}
 
+    guardian_map = await GuardianRepository(db).map_primary_by_profile_ids(profile_ids)
+    # Todos os perfis do grupo compartilham a mesma coorte (garantido por
+    # `risk_service.recompute_all`), então a data da formação é lida uma
+    # única vez, nunca por candidato.
+    guardian_training_date = None
+    group_cohort_id = profiles[0].cohort_id
+    if group_cohort_id is not None:
+        cohort = await CohortRepository(db).get_by_id(group_cohort_id)
+        guardian_training_date = cohort.guardian_training_date if cohort is not None else None
+    today = now.date()
+
     completion_ratio_by_profile = {
         profile.id: (completed_map.get(profile.id, 0) / total_missions if total_missions else 0.0)
         for profile in profiles
@@ -109,6 +122,17 @@ async def derive_features_for_group(
 
         below_cohort_median = completion_ratio < median_ratio if median_ratio is not None else None
 
+        guardian = guardian_map.get(profile.id)
+        guardian_has_contact = guardian is not None and bool(guardian.phone or guardian.email)
+        guardian_training_attended = (
+            guardian is not None and guardian.training_attended_at is not None
+        )
+        guardian_training_overdue = (
+            guardian_training_date is not None
+            and today > guardian_training_date
+            and not guardian_training_attended
+        )
+
         features.append(
             CandidateRiskFeatures(
                 candidate_profile_id=str(profile.id),
@@ -121,6 +145,9 @@ async def derive_features_for_group(
                 current_step_label=current_label,
                 below_cohort_median=below_cohort_median,
                 cohort_median_completion_ratio=median_ratio,
+                guardian_has_contact=guardian_has_contact,
+                guardian_training_attended=guardian_training_attended,
+                guardian_training_overdue=guardian_training_overdue,
             )
         )
 

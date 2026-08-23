@@ -46,6 +46,12 @@ class Cohort(Base, TimestampMixin):
     # (ex.: "verao") sem migration.
     term: Mapped[str] = mapped_column(String(10), nullable=False)
     exam_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Data única da formação obrigatória de pais/responsáveis desta coorte
+    # (mentoria do CEAP: se o responsável não participa, o candidato perde a
+    # vaga). Uma data por edital — não por candidato — porque toda a turma
+    # compartilha a mesma sessão. Usada pelo sinal de risco do responsável em
+    # `app.services.risk_feature_service`.
+    guardian_training_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True, nullable=False)
 
     def __repr__(self) -> str:

@@ -6,7 +6,7 @@ montar SQL/ORM diretamente.
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.candidate_document import CandidateDocument, DocumentType
@@ -34,6 +34,25 @@ class CandidateDocumentRepository:
             CandidateDocument.candidate_profile_id == candidate_profile_id
         )
         return list((await self._db.execute(stmt)).scalars().all())
+
+    async def count_by_profile_ids(
+        self, candidate_profile_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, int]:
+        """Quantos documentos cada candidato já enviou, em lote (evita N+1 no job).
+
+        Usado por `app.services.journey_service` para decidir se a etapa
+        "Documentação" está completa (todos os `REQUIRED_DOCUMENT_TYPES`
+        enviados) sem uma query por candidato.
+        """
+        if not candidate_profile_ids:
+            return {}
+        stmt = (
+            select(CandidateDocument.candidate_profile_id, func.count())
+            .where(CandidateDocument.candidate_profile_id.in_(candidate_profile_ids))
+            .group_by(CandidateDocument.candidate_profile_id)
+        )
+        rows = (await self._db.execute(stmt)).all()
+        return {row[0]: int(row[1]) for row in rows}
 
     async def upsert(
         self,

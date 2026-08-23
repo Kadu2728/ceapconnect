@@ -47,6 +47,7 @@ from app.schemas.risk import (
     RiskQueueItem,
     RiskQueueResponse,
 )
+from app.services import journey_service
 from app.services.risk_feature_service import derive_features_for_group
 
 _RECENT_ACTIVITY_LIMIT = 20
@@ -78,6 +79,10 @@ async def recompute_all(db: AsyncSession, *, scorer: RiskScorer | None = None) -
     score_repo = RiskScoreRepository(db)
     processed = 0
     for group in groups.values():
+        # Recomputa a etapa da jornada antes de derivar as features — pega
+        # avanços de candidatos inativos (ex.: exam_date chegou) que nunca
+        # abriram o Dashboard para disparar o sync por lá (ver journey_service).
+        await journey_service.sync_group(db, group)
         features_list = await derive_features_for_group(db, group)
         for features in features_list:
             result = active_scorer.score(features)

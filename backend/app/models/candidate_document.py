@@ -43,6 +43,11 @@ DOC_FOTO_3X4: Final = "foto_3x4"
 
 _VALID_DOCUMENT_TYPES: Final = (DOC_IDENTIDADE, DOC_COMPROVANTE_RESIDENCIA, DOC_FOTO_3X4)
 
+# Export público: usado por `app.services.journey_service` para saber quantos
+# documentos completam a etapa "Documentação" da jornada, sem duplicar a
+# lista em outro módulo.
+REQUIRED_DOCUMENT_TYPES: Final = _VALID_DOCUMENT_TYPES
+
 
 class CandidateDocument(Base):
     """Um documento enviado pelo candidato para um tipo específico do checklist."""
