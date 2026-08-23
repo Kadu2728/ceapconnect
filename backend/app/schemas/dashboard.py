@@ -89,6 +89,18 @@ class CohortStanding(BaseModel):
     message: str
 
 
+class GuardianStatus(BaseModel):
+    """Status da jornada do responsável, exibido ao próprio candidato.
+
+    Incentiva o candidato a "puxar o pai" (mentoria do CEAP: responsável
+    ausente é fator de evasão de primeira ordem) — nunca o score de risco,
+    que o candidato jamais vê.
+    """
+
+    has_guardian: bool
+    training_attended: bool
+
+
 class DashboardResponse(BaseModel):
     """Dado agregado retornado por `GET /api/v1/dashboard`."""
 
@@ -108,3 +120,4 @@ class DashboardResponse(BaseModel):
     onboarded: bool
     # None = coorte inexistente/pequena demais para ser anônima (EPIC 20).
     cohort_standing: CohortStanding | None
+    guardian_status: GuardianStatus

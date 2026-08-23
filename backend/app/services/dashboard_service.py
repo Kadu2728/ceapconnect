@@ -21,6 +21,7 @@ from app.models.user import User
 from app.repositories.achievement_repository import AchievementRepository
 from app.repositories.candidate_profile_repository import CandidateProfileRepository
 from app.repositories.event_repository import EventRepository
+from app.repositories.guardian_repository import GuardianRepository
 from app.repositories.journey_step_repository import JourneyStepRepository
 from app.repositories.mission_repository import MissionRepository
 from app.repositories.notification_repository import NotificationRepository
@@ -30,6 +31,7 @@ from app.repositories.reward_repository import (
 )
 from app.schemas.dashboard import (
     DashboardResponse,
+    GuardianStatus,
     JourneyProgress,
     JourneyStepItem,
     NextMission,
@@ -96,6 +98,12 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
     level = resolve_level(profile.xp_total)
     next_reward = await _build_next_reward(db, profile.id, level)
 
+    guardian = await GuardianRepository(db).get_primary_for_profile(profile.id)
+    guardian_status = GuardianStatus(
+        has_guardian=guardian is not None,
+        training_attended=guardian is not None and guardian.training_attended_at is not None,
+    )
+
     # Tracking comportamental (EPIC 14): abrir o Dashboard é ver a jornada —
     # sinal real de atividade. `track_background` roda fora do request path
     # (Fase 4 — otimizações medidas): o cliente não espera este INSERT, que
@@ -120,6 +128,7 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
         exam_date=profile.exam_date,
         onboarded=profile.onboarded_at is not None,
         cohort_standing=await cohort_stats_service.build_cohort_standing(db, profile),
+        guardian_status=guardian_status,
     )
 
 

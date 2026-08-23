@@ -115,6 +115,11 @@ _ACHIEVEMENTS: tuple[dict, ...] = (
         "description": "Completou 100% dos dados do perfil.",
         "icon": "badge-check",
     },
+    {
+        "name": "Responsável na Jornada",
+        "description": "Seu responsável concluiu a formação obrigatória do processo seletivo.",
+        "icon": "heart-handshake",
+    },
 )
 
 

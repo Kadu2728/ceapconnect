@@ -16,6 +16,7 @@ from app.models.cohort_xp_standing import CohortXpStanding
 from app.models.event import Event
 from app.models.event_registration import EventRegistration
 from app.models.guardian import Guardian
+from app.models.guardian_intervention import GuardianIntervention
 from app.models.intervention import Intervention
 from app.models.journey_step import JourneyStep
 from app.models.mission import Mission
@@ -42,6 +43,7 @@ __all__ = [
     "Event",
     "EventRegistration",
     "Guardian",
+    "GuardianIntervention",
     "Intervention",
     "JourneyStep",
     "Mission",

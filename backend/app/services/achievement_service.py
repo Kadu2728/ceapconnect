@@ -31,6 +31,7 @@ from app.services.candidate_profile_service import get_profile_or_raise
 _ACHIEVEMENT_FIRST_MISSION = "Primeira Missão"
 _ACHIEVEMENT_100_XP = "100 XP"
 _ACHIEVEMENT_PROFILE_COMPLETE = "Perfil Completo"
+_ACHIEVEMENT_GUARDIAN_TRAINING = "Responsável na Jornada"
 _XP_MILESTONE = 100
 
 
@@ -106,6 +107,20 @@ async def unlock_profile_complete(
     """
     return await _unlock_if_absent(
         AchievementRepository(db), profile, _ACHIEVEMENT_PROFILE_COMPLETE
+    )
+
+
+async def unlock_guardian_training(
+    db: AsyncSession, profile: CandidateProfile
+) -> Achievement | None:
+    """Desbloqueia "Responsável na Jornada" quando o responsável conclui a formação.
+
+    Nunca concede XP — é um marco do responsável, não uma ação do candidato
+    (ver `app.models.guardian`, módulo docstring). Não commita; chamado por
+    `app.services.guardian_service.mark_training_attended` na mesma transação.
+    """
+    return await _unlock_if_absent(
+        AchievementRepository(db), profile, _ACHIEVEMENT_GUARDIAN_TRAINING
     )
 
 

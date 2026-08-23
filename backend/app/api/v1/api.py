@@ -9,6 +9,7 @@ from fastapi import APIRouter
 from app.api.v1.achievements import router as achievements_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.admin_funnel import router as admin_funnel_router
+from app.api.v1.admin_guardians import router as admin_guardians_router
 from app.api.v1.admin_risk import router as admin_risk_router
 from app.api.v1.assistant import router as assistant_router
 from app.api.v1.auth import router as auth_router
@@ -42,6 +43,7 @@ api_router.include_router(notifications_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_risk_router)
 api_router.include_router(admin_funnel_router)
+api_router.include_router(admin_guardians_router)
 api_router.include_router(internal_router)
 api_router.include_router(assistant_router)
 api_router.include_router(onboarding_router)

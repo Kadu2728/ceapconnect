@@ -18,6 +18,11 @@ class GuardianRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
+    async def get_by_id(self, guardian_id: uuid.UUID) -> Guardian | None:
+        """Um responsável pelo id."""
+        stmt = select(Guardian).where(Guardian.id == guardian_id)
+        return (await self._db.execute(stmt)).scalar_one_or_none()
+
     async def get_primary_for_profile(self, candidate_profile_id: uuid.UUID) -> Guardian | None:
         """O responsável principal do candidato (ou None se nenhum cadastrado)."""
         stmt = select(Guardian).where(
