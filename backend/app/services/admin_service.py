@@ -28,7 +28,7 @@ from app.schemas.admin import (
     LevelBucket,
     TopReward,
 )
-from app.services import notification_service
+from app.services import funnel_service, notification_service
 
 _SIGNUPS_WINDOW_DAYS = 14
 _TOP_REWARDS_LIMIT = 5
@@ -103,6 +103,7 @@ async def _build_overview(db: AsyncSession) -> AdminOverview:
     signups_daily = [DailyCount(date=day, count=count) for day, count in signups]
 
     intervention_impact = await _build_intervention_impact(repo, now)
+    funnel = await funnel_service.get_funnel(db, cohort_ids=None)
 
     return AdminOverview(
         total_students=total,
@@ -126,6 +127,7 @@ async def _build_overview(db: AsyncSession) -> AdminOverview:
         top_rewards=top_rewards,
         signups_daily=signups_daily,
         intervention_impact=intervention_impact,
+        inscricao_to_prova_rate=funnel.inscricao_to_prova_rate,
     )
 
 

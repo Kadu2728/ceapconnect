@@ -73,6 +73,10 @@ class AdminOverview(BaseModel):
     signups_daily: list[DailyCount]
     # Predição de evasão (EPIC 14).
     intervention_impact: InterventionImpact
+    # KPI de conversão inscrição→prova — a mentoria do CEAP identificou este
+    # trecho do funil como o gargalo real (ver GET /admin/funnel para o
+    # detalhe etapa a etapa). `None` sem candidato nenhum cadastrado ainda.
+    inscricao_to_prova_rate: float | None
 
 
 class AdminRedemptionItem(BaseModel):
