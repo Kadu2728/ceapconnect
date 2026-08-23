@@ -6,6 +6,7 @@ import { AchievementsStrip } from "@/features/dashboard/components/achievements-
 import { CohortStandingCard } from "@/features/dashboard/components/cohort-standing-card";
 import { ExamCountdown } from "@/features/dashboard/components/exam-countdown";
 import { Greeting } from "@/features/dashboard/components/greeting";
+import { GuardianStatusCard } from "@/features/dashboard/components/guardian-status-card";
 import { JourneyProgress } from "@/features/dashboard/components/journey-progress";
 import { NextMissionCard } from "@/features/dashboard/components/next-mission-card";
 import { NextRewardCard } from "@/features/dashboard/components/next-reward-card";
@@ -83,6 +84,10 @@ export function DashboardContent({ data }: DashboardContentProps) {
 
       <motion.div variants={itemVariants}>
         <CohortStandingCard standing={data.cohort_standing} />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <GuardianStatusCard status={data.guardian_status} />
       </motion.div>
     </motion.div>
   );

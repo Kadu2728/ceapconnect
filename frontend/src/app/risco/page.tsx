@@ -8,8 +8,17 @@ import { PageHeader } from "@/components/layout/page-header";
 import { useRequireAuth } from "@/features/auth/hooks/use-require-auth";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
+import { GuardiansAtRisk } from "@/features/guardians/components/guardians-at-risk";
 import { InterventionDrawer } from "@/features/risk/components/intervention-drawer";
 import { RiskQueue } from "@/features/risk/components/risk-queue";
+import { cn } from "@/lib/utils";
+
+type ConsoleTab = "candidatos" | "responsaveis";
+
+const TABS: { value: ConsoleTab; label: string }[] = [
+  { value: "candidatos", label: "Candidatos" },
+  { value: "responsaveis", label: "Responsáveis · Área de Pais" },
+];
 
 /**
  * Console de Intervenção (EPIC 14 — Predição de evasão). Protegido em duas
@@ -29,6 +38,7 @@ export default function RiscoPage() {
 
   const dashboardQuery = useDashboard();
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ConsoleTab>("candidatos");
 
   useEffect(() => {
     if (isAuthorized && storedUser && !isStaff) {
@@ -48,17 +58,42 @@ export default function RiscoPage() {
       <PageHeader
         eyebrow="Console de intervenção"
         title="Risco de evasão"
-        description="Candidatos priorizados por risco de abandono, com o motivo em linguagem clara e ação de contato em um clique."
+        description="Candidatos e responsáveis priorizados por risco, com o motivo em linguagem clara e ação de contato em um clique."
       />
 
       {isAuthorized && isStaff ? (
-        <>
-          <RiskQueue onSelectCandidate={setSelectedCandidateId} />
-          <InterventionDrawer
-            candidateProfileId={selectedCandidateId}
-            onClose={() => setSelectedCandidateId(null)}
-          />
-        </>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2">
+            {TABS.map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                aria-pressed={activeTab === tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={cn(
+                  "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+                  activeTab === tab.value
+                    ? "border-brand bg-brand/10 text-brand"
+                    : "border-input text-muted-foreground hover:bg-accent/50",
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "candidatos" ? (
+            <>
+              <RiskQueue onSelectCandidate={setSelectedCandidateId} />
+              <InterventionDrawer
+                candidateProfileId={selectedCandidateId}
+                onClose={() => setSelectedCandidateId(null)}
+              />
+            </>
+          ) : (
+            <GuardiansAtRisk />
+          )}
+        </div>
       ) : null}
     </AuthenticatedShell>
   );

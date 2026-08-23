@@ -76,6 +76,12 @@ export interface DashboardCohortStanding {
   message: string;
 }
 
+/** Status da jornada do responsável, exibido ao próprio candidato (nunca o score de risco). */
+export interface DashboardGuardianStatus {
+  has_guardian: boolean;
+  training_attended: boolean;
+}
+
 export interface DashboardData {
   greeting_name: string;
   journey: DashboardJourney;
@@ -89,4 +95,5 @@ export interface DashboardData {
   exam_date: string | null;
   onboarded: boolean;
   cohort_standing: DashboardCohortStanding | null;
+  guardian_status: DashboardGuardianStatus;
 }
