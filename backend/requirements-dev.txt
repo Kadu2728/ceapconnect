@@ -6,3 +6,9 @@
 
 # --- Lint & format (usado pelo pre-commit hook e no CI) ---
 ruff==0.15.20
+
+# --- Testes (Candidate Journey OS — fase F1) ---
+# `asyncio_mode = "auto"` (ver pyproject.toml) evita marcar cada teste
+# assíncrono com `@pytest.mark.asyncio` manualmente.
+pytest==8.3.4
+pytest-asyncio==0.25.2

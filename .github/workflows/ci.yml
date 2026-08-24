@@ -8,11 +8,33 @@ on:
 
 jobs:
   backend:
-    name: Backend — lint & format
+    name: Backend — lint, format & tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
+    services:
+      # Postgres efêmero só para o job de CI — nunca o Neon compartilhado de
+      # dev/produção. Migrations rodam do zero a cada execução, então a
+      # suíte prova que a cadeia inteira de migrations é aplicável, não só a
+      # mais recente.
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ceap_connect_test
+          POSTGRES_PASSWORD: ceap_connect_test
+          POSTGRES_DB: ceap_connect_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ceap_connect_test -d ceap_connect_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://ceap_connect_test:ceap_connect_test@localhost:5432/ceap_connect_test
+      DATABASE_SSL: "false"
+      JWT_SECRET: ci-only-secret-not-used-in-production
     steps:
       - uses: actions/checkout@v4
 
@@ -28,6 +50,12 @@ jobs:
 
       - name: ruff format --check
         run: ruff format --check .
+
+      - name: Aplicar migrations no Postgres efêmero
+        run: alembic upgrade head
+
+      - name: pytest
+        run: pytest -v
 
   frontend:
     name: Frontend — lint, typecheck & build

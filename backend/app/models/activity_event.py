@@ -33,19 +33,48 @@ ActivityEventName = Literal[
     "login",
     "step_viewed",
     "step_completed",
+    "step_abandoned",
+    "step_resumed",
     "mission_started",
     "mission_completed",
     "mission_abandoned",
     "document_uploaded",
+    "nba_generated",
+    "nba_clicked",
+    "nba_completed",
+    "recovery_entered",
+    "recovery_completed",
+    "recovery_exited",
 ]
 
 EVENT_LOGIN: Final = "login"
 EVENT_STEP_VIEWED: Final = "step_viewed"
 EVENT_STEP_COMPLETED: Final = "step_completed"
+# Candidate Journey OS — fundação F1 (taxonomia de eventos do Candidate
+# State / Next Best Action / Zero-Click Recovery / Modo Resgate). Nenhum
+# nome antigo foi renomeado: `step_viewed`/`step_completed` já cobrem
+# "started/completed" da spec original do brief, então só o que faltava
+# (abandono, retomada, e os três novos consumidores) foi acrescentado —
+# estender uma migration de CHECK constraint é seguro, renomear valores
+# históricos já gravados não seria.
+EVENT_STEP_ABANDONED: Final = "step_abandoned"
+EVENT_STEP_RESUMED: Final = "step_resumed"
 EVENT_MISSION_STARTED: Final = "mission_started"
 EVENT_MISSION_COMPLETED: Final = "mission_completed"
 EVENT_MISSION_ABANDONED: Final = "mission_abandoned"
 EVENT_DOCUMENT_UPLOADED: Final = "document_uploaded"
+# Next Best Action Engine (N2): ciclo gerado → clicado → concluído, base do
+# Learning Loop (F2) para medir CTR e conclusão por recomendação.
+EVENT_NBA_GENERATED: Final = "nba_generated"
+EVENT_NBA_CLICKED: Final = "nba_clicked"
+EVENT_NBA_COMPLETED: Final = "nba_completed"
+# Modo Resgate (N4): ativação, conclusão da ação única apresentada, e saída
+# sem concluir (candidato voltou à jornada normal por conta própria ou por
+# o estado ter melhorado) — os três suficientes para medir conversão do
+# modo sem duplicar o que `nba_*` já mede sobre a ação em si.
+EVENT_RECOVERY_ENTERED: Final = "recovery_entered"
+EVENT_RECOVERY_COMPLETED: Final = "recovery_completed"
+EVENT_RECOVERY_EXITED: Final = "recovery_exited"
 
 # Vocabulário fechado de eventos (CHECK constraint). `mission_completed` não
 # estava na lista original da spec, mas é emitido por um fluxo que já existe
@@ -56,10 +85,18 @@ _VALID_EVENT_NAMES: Final = (
     EVENT_LOGIN,
     EVENT_STEP_VIEWED,
     EVENT_STEP_COMPLETED,
+    EVENT_STEP_ABANDONED,
+    EVENT_STEP_RESUMED,
     EVENT_MISSION_STARTED,
     EVENT_MISSION_COMPLETED,
     EVENT_MISSION_ABANDONED,
     EVENT_DOCUMENT_UPLOADED,
+    EVENT_NBA_GENERATED,
+    EVENT_NBA_CLICKED,
+    EVENT_NBA_COMPLETED,
+    EVENT_RECOVERY_ENTERED,
+    EVENT_RECOVERY_COMPLETED,
+    EVENT_RECOVERY_EXITED,
 )
 
 
