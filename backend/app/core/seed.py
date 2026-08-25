@@ -15,6 +15,7 @@ missão não exige alterar nenhuma coluna).
 
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select, update
@@ -1198,7 +1199,27 @@ async def _seed_simulado_questions(db: AsyncSession) -> int:
     return len(to_create)
 
 
-async def seed() -> None:
+@dataclass(frozen=True)
+class SeedSummary:
+    """Quantos registros cada catálogo ganhou nesta execução do seed.
+
+    Sempre 0 num catálogo já semeado antes — o seed é idempotente por chave
+    natural (`key`/`title`/`name`/`statement`, ver cada `_seed_*`), então
+    rodar de novo em produção nunca duplica, só preenche o que for novo
+    (ex.: questões de simulado adicionadas depois do primeiro deploy).
+    """
+
+    journey_steps_created: int
+    missions_created: int
+    achievements_created: int
+    events_created: int
+    rewards_created: int
+    cohorts_created: int
+    profiles_assigned_to_cohort: int
+    simulado_questions_created: int
+
+
+async def seed() -> SeedSummary:
     """Executa o seed completo, numa única transação idempotente."""
     async with AsyncSessionLocal() as db:
         created_steps = await _seed_journey_steps(db)
@@ -1213,19 +1234,30 @@ async def seed() -> None:
         created_questions = await _seed_simulado_questions(db)
         await db.commit()
 
+    summary = SeedSummary(
+        journey_steps_created=created_steps,
+        missions_created=created_missions,
+        achievements_created=created_achievements,
+        events_created=created_events,
+        rewards_created=created_rewards,
+        cohorts_created=created_cohorts,
+        profiles_assigned_to_cohort=assigned_profiles,
+        simulado_questions_created=created_questions,
+    )
     logger.info(
         "Seed concluído: %d etapas, %d missões, %d conquistas, %d eventos, "
         "%d recompensas, %d coorte(s) criadas, %d candidato(s) atribuídos à coorte, "
         "%d questão(ões) de simulado.",
-        created_steps,
-        created_missions,
-        created_achievements,
-        created_events,
-        created_rewards,
-        created_cohorts,
-        assigned_profiles,
-        created_questions,
+        summary.journey_steps_created,
+        summary.missions_created,
+        summary.achievements_created,
+        summary.events_created,
+        summary.rewards_created,
+        summary.cohorts_created,
+        summary.profiles_assigned_to_cohort,
+        summary.simulado_questions_created,
     )
+    return summary
 
 
 async def _main() -> None:

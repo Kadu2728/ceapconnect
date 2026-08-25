@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import verify_internal_api_key
 from app.core.database import get_db
+from app.core.seed import seed as run_seed
 from app.schemas.reminder import ReminderCheckSummary
 from app.schemas.response import ApiResponse
 from app.schemas.risk import RecomputeSummary
+from app.schemas.seed import SeedSummary
 from app.services import reminder_service, risk_service
 
 router = APIRouter(prefix="/internal", tags=["Interno"])
@@ -40,3 +42,31 @@ async def check_reminders(db: AsyncSession = Depends(get_db)) -> ApiResponse[Rem
     """Dispara manualmente a mesma verificação que o job agendado executa periodicamente."""
     data = await reminder_service.check_and_send_reminders(db)
     return ApiResponse(success=True, message="Verificação de lembretes concluída.", data=data)
+
+
+@router.post(
+    "/seed",
+    response_model=ApiResponse[SeedSummary],
+    summary="Semeia os catálogos (jornada, missões, conquistas, questões de simulado...)",
+    dependencies=[Depends(verify_internal_api_key)],
+)
+async def trigger_seed() -> ApiResponse[SeedSummary]:
+    """Mesmo `python -m app.core.seed`, disparável em produção via API.
+
+    Idempotente por chave natural de cada catálogo (ver `app.core.seed.seed`)
+    — nunca duplica um registro já existente, só insere o que for novo. Abre
+    a própria sessão de banco (não usa `Depends(get_db)`): é o mesmo `seed()`
+    chamado pelo script de linha de comando, sem nenhuma lógica duplicada.
+    """
+    result = await run_seed()
+    data = SeedSummary(
+        journey_steps_created=result.journey_steps_created,
+        missions_created=result.missions_created,
+        achievements_created=result.achievements_created,
+        events_created=result.events_created,
+        rewards_created=result.rewards_created,
+        cohorts_created=result.cohorts_created,
+        profiles_assigned_to_cohort=result.profiles_assigned_to_cohort,
+        simulado_questions_created=result.simulado_questions_created,
+    )
+    return ApiResponse(success=True, message="Seed concluído.", data=data)
