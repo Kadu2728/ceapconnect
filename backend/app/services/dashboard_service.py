@@ -10,6 +10,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import NotFoundException
 from app.core.gamification import LevelProgress, resolve_level
 from app.models.achievement import Achievement
@@ -126,6 +127,7 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
         upcoming_events=upcoming_events,
         unread_notifications_count=unread_notifications_count,
         exam_date=profile.exam_date,
+        exam_location=settings.exam_location,
         onboarded=profile.onboarded_at is not None,
         cohort_standing=await cohort_stats_service.build_cohort_standing(db, profile),
         guardian_status=guardian_status,

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AchievementsStrip } from "@/features/dashboard/components/achievements-strip";
 import { CohortStandingCard } from "@/features/dashboard/components/cohort-standing-card";
 import { ExamCountdown } from "@/features/dashboard/components/exam-countdown";
+import { ExamDayLogistics } from "@/features/dashboard/components/exam-day-logistics";
 import { Greeting } from "@/features/dashboard/components/greeting";
 import { GuardianStatusCard } from "@/features/dashboard/components/guardian-status-card";
 import { JourneyProgress } from "@/features/dashboard/components/journey-progress";
@@ -13,6 +14,7 @@ import { NextRewardCard } from "@/features/dashboard/components/next-reward-card
 import { UpcomingEventsList } from "@/features/dashboard/components/upcoming-events-list";
 import { XpBadge } from "@/features/dashboard/components/xp-badge";
 import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
+import { getDaysUntil } from "@/features/dashboard/utils/date";
 import { NextBestActionCard } from "@/features/journey-os/components/next-best-action-card";
 import { RecoveryModeCard } from "@/features/journey-os/components/recovery-mode-card";
 import { useCandidateState } from "@/features/journey-os/hooks/use-candidate-state";
@@ -28,6 +30,10 @@ interface DashboardContentProps {
 }
 
 const STALLED_MOMENTUMS = new Set(["stalled", "recovery"]);
+// A partir de quantos dias a logística do dia da prova aparece no Dashboard
+// — cedo o bastante para o candidato se organizar (transporte público),
+// tarde o bastante para não competir por atenção fora dessa janela.
+const EXAM_LOGISTICS_WINDOW_DAYS = 14;
 
 /**
  * Composição do Dashboard (EPIC 03) com os dados reais já carregados.
@@ -54,6 +60,10 @@ export function DashboardContent({ data }: DashboardContentProps) {
   const isRecoveryMode =
     STALLED_MOMENTUMS.has(candidateStateQuery.data?.momentum ?? "") &&
     nextBestAction !== null;
+
+  const daysToExam = data.exam_date ? getDaysUntil(data.exam_date) : null;
+  const showExamLogistics =
+    daysToExam !== null && daysToExam >= 0 && daysToExam <= EXAM_LOGISTICS_WINDOW_DAYS;
 
   if (isRecoveryMode && nextBestAction) {
     const currentStep = data.journey.steps.find(
@@ -96,6 +106,12 @@ export function DashboardContent({ data }: DashboardContentProps) {
       <motion.div variants={itemVariants}>
         <ExamCountdown examDate={data.exam_date} />
       </motion.div>
+
+      {showExamLogistics ? (
+        <motion.div variants={itemVariants}>
+          <ExamDayLogistics examLocation={data.exam_location} />
+        </motion.div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">

@@ -124,6 +124,9 @@ class DashboardResponse(BaseModel):
     upcoming_events: list[UpcomingEvent]
     unread_notifications_count: int
     exam_date: date | None
+    # Logística do dia da prova (endereço) — sempre presente, mesmo sem
+    # `exam_date` definida ainda, para o frontend decidir quando mostrar.
+    exam_location: str
     # False = candidato ainda não viu a tela de boas-vindas (primeiro login).
     onboarded: bool
     # None = coorte inexistente/pequena demais para ser anônima (EPIC 20).

@@ -95,6 +95,7 @@ export interface DashboardData {
   upcoming_events: DashboardEvent[];
   unread_notifications_count: number;
   exam_date: string | null;
+  exam_location: string;
   onboarded: boolean;
   cohort_standing: DashboardCohortStanding | null;
   guardian_status: DashboardGuardianStatus;
