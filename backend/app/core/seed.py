@@ -411,6 +411,269 @@ _SIMULADO_QUESTIONS: tuple[dict, ...] = (
         "correct_option_key": "b",
         "explanation": "A frase relaciona diretamente ler com ganhos de vocabulário e escrita.",
     },
+    # Banco ampliado (backlog "questões maiores nos simulados"): com só 12
+    # questões por matéria, uma tentativa (10 sorteadas) já cobria quase o
+    # banco inteiro — a segunda tentativa repetia quase tudo. Mais questões
+    # aqui não é feature nova, é fôlego para uma que já existe.
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Complete: "Vou ___ escola todos os dias."',
+        "options": [
+            {"key": "a", "text": "a"},
+            {"key": "b", "text": "à"},
+            {"key": "c", "text": "há"},
+            {"key": "d", "text": "ah"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            'A crase marca a fusão da preposição "a" com o artigo "a" antes de palavra '
+            'feminina: "vou à escola" (= vou a + a escola).'
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": "Assinale a alternativa com a grafia correta da palavra:",
+        "options": [
+            {"key": "a", "text": "Beneficiente"},
+            {"key": "b", "text": "Beneficente"},
+            {"key": "c", "text": "Benefissente"},
+            {"key": "d", "text": "Benefecente"},
+        ],
+        "correct_option_key": "b",
+        "explanation": '"Beneficente" (que faz o bem) se escreve sem "i" antes do "c".',
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Complete conforme a norma culta: "Prefiro estudar ___ trabalhar."',
+        "options": [
+            {"key": "a", "text": "que"},
+            {"key": "b", "text": "do que"},
+            {"key": "c", "text": "a"},
+            {"key": "d", "text": "sobre"},
+        ],
+        "correct_option_key": "c",
+        "explanation": (
+            'O verbo "preferir" pede a preposição "a" na comparação ("preferir uma '
+            'coisa a outra"), não "do que".'
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": "Assinale a frase com a vírgula usada corretamente:",
+        "options": [
+            {"key": "a", "text": "Antes de sair, verifique a porta."},
+            {"key": "b", "text": "Antes, de sair verifique a porta."},
+            {"key": "c", "text": "Antes de, sair verifique a porta."},
+            {"key": "d", "text": "Antes de sair verifique, a porta."},
+        ],
+        "correct_option_key": "a",
+        "explanation": (
+            'A vírgula separa a oração adverbial anteposta ("Antes de sair") da oração principal.'
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": (
+            'Texto: "Marcos estudou todos os dias durante um mês para o processo '
+            'seletivo do CEAP e, na véspera da prova, decidiu descansar." Por que '
+            "Marcos descansou na véspera da prova?"
+        ),
+        "options": [
+            {"key": "a", "text": "Porque desistiu de estudar"},
+            {"key": "b", "text": "Porque já havia estudado bastante e quis chegar descansado"},
+            {"key": "c", "text": "Porque a prova foi adiada"},
+            {"key": "d", "text": "Porque não gostava de estudar"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            "O texto mostra um mês inteiro de estudo — o descanso na véspera é "
+            "consequência disso, não desistência."
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Em "Chorei rios de lágrimas", a figura de linguagem usada é:',
+        "options": [
+            {"key": "a", "text": "metáfora"},
+            {"key": "b", "text": "hipérbole"},
+            {"key": "c", "text": "ironia"},
+            {"key": "d", "text": "eufemismo"},
+        ],
+        "correct_option_key": "b",
+        "explanation": 'A hipérbole é o exagero proposital — ninguém chora "rios" de verdade.',
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": (
+            'Em "O menino, que é muito esperto, resolveu o problema rápido", o trecho '
+            '"que é muito esperto" é uma oração subordinada:'
+        ),
+        "options": [
+            {"key": "a", "text": "coordenada"},
+            {"key": "b", "text": "adjetiva"},
+            {"key": "c", "text": "substantiva"},
+            {"key": "d", "text": "adverbial"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            'A oração qualifica "menino" (como um adjetivo faria) — por isso é adjetiva.'
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Um sinônimo adequado para "árido" (como em "terreno árido") é:',
+        "options": [
+            {"key": "a", "text": "fértil"},
+            {"key": "b", "text": "seco"},
+            {"key": "c", "text": "úmido"},
+            {"key": "d", "text": "verde"},
+        ],
+        "correct_option_key": "b",
+        "explanation": '"Árido" descreve terreno seco, pouco fértil — sinônimo de "seco".',
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": "Assinale a frase de acordo com a norma culta:",
+        "options": [
+            {"key": "a", "text": "Fazem dois anos que ele se formou."},
+            {"key": "b", "text": "Faz dois anos que ele se formou."},
+            {"key": "c", "text": "Fazeram dois anos que ele se formou."},
+            {"key": "d", "text": "Fazia dois anos que ele se formará."},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            'O verbo "fazer" indicando tempo decorrido é impessoal — fica sempre na '
+            "3ª pessoa do singular."
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Complete: "Ele tem aptidão ___ matemática."',
+        "options": [
+            {"key": "a", "text": "a"},
+            {"key": "b", "text": "para"},
+            {"key": "c", "text": "com"},
+            {"key": "d", "text": "em"},
+        ],
+        "correct_option_key": "b",
+        "explanation": 'A regência padrão do substantivo "aptidão" é com a preposição "para".',
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": '"O livro foi lido pelo aluno" está na voz:',
+        "options": [
+            {"key": "a", "text": "ativa"},
+            {"key": "b", "text": "passiva"},
+            {"key": "c", "text": "reflexiva"},
+            {"key": "d", "text": "impessoal"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            'O sujeito ("o livro") sofre a ação em vez de praticá-la — característica '
+            "da voz passiva."
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Em "A mãe da menina que estava doente chegou", quem estava doente?',
+        "options": [
+            {"key": "a", "text": "com certeza a mãe"},
+            {"key": "b", "text": "com certeza a menina"},
+            {"key": "c", "text": "o texto é ambíguo — pode ser qualquer uma das duas"},
+            {"key": "d", "text": "nenhuma das duas"},
+        ],
+        "correct_option_key": "c",
+        "explanation": (
+            'O "que" pode se referir tanto a "mãe" quanto a "menina" — um caso clássico '
+            "de ambiguidade."
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Complete conforme a concordância: "Seguem ___ os documentos."',
+        "options": [
+            {"key": "a", "text": "anexo"},
+            {"key": "b", "text": "anexos"},
+            {"key": "c", "text": "anexado"},
+            {"key": "d", "text": "anexando"},
+        ],
+        "correct_option_key": "b",
+        "explanation": '"Anexos" concorda em número e gênero com "os documentos" (plural).',
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Um sinônimo adequado para "efêmero" é:',
+        "options": [
+            {"key": "a", "text": "duradouro"},
+            {"key": "b", "text": "passageiro"},
+            {"key": "c", "text": "eterno"},
+            {"key": "d", "text": "forte"},
+        ],
+        "correct_option_key": "b",
+        "explanation": '"Efêmero" significa que dura pouco tempo — sinônimo de "passageiro".',
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Em "Ele tem um coração de pedra", o sentido da expressão é:',
+        "options": [
+            {"key": "a", "text": "denotativo (literal)"},
+            {"key": "b", "text": "conotativo (figurado)"},
+            {"key": "c", "text": "técnico"},
+            {"key": "d", "text": "científico"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            "Ninguém tem um coração feito de pedra de verdade — a expressão indica "
+            "insensibilidade, sentido figurado (conotativo)."
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": "Assinale a alternativa com a acentuação correta:",
+        "options": [
+            {"key": "a", "text": "Previlégio"},
+            {"key": "b", "text": "Privilégio"},
+            {"key": "c", "text": "Previlegio"},
+            {"key": "d", "text": "Privilegio"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            '"Privilégio" se escreve com "i" (não "e") na primeira sílaba, e é acentuada.'
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": 'Complete: "A ___ de cinema começa às 20h."',
+        "options": [
+            {"key": "a", "text": "cessão"},
+            {"key": "b", "text": "sessão"},
+            {"key": "c", "text": "seção"},
+            {"key": "d", "text": "secção"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            '"Sessão" é a apresentação/reunião; "seção" é parte de algo; "cessão" é o '
+            "ato de ceder — palavras parônimas fáceis de confundir."
+        ),
+    },
+    {
+        "subject": SUBJECT_PORTUGUES,
+        "statement": (
+            'Texto: "O CEAP oferece cursos técnicos gratuitos para jovens, com o '
+            'objetivo de ampliar o acesso à educação profissional." Segundo o texto, '
+            "qual é o objetivo do CEAP?"
+        ),
+        "options": [
+            {"key": "a", "text": "Vender cursos técnicos"},
+            {"key": "b", "text": "Ampliar o acesso à educação profissional"},
+            {"key": "c", "text": "Reduzir o número de vagas"},
+            {"key": "d", "text": "Substituir escolas públicas"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            'O próprio texto declara o objetivo: "ampliar o acesso à educação profissional".'
+        ),
+    },
     # --- Matemática ---
     {
         "subject": SUBJECT_MATEMATICA,
@@ -567,6 +830,237 @@ _SIMULADO_QUESTIONS: tuple[dict, ...] = (
             "Divisão e multiplicação têm a mesma prioridade e se resolvem da esquerda "
             "para a direita: 100 ÷ 4 = 25, depois 25 × 2 = 50."
         ),
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Quanto é 25% de 80?",
+        "options": [
+            {"key": "a", "text": "15"},
+            {"key": "b", "text": "20"},
+            {"key": "c", "text": "25"},
+            {"key": "d", "text": "30"},
+        ],
+        "correct_option_key": "b",
+        "explanation": "80 × 0,25 = 20.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Simplifique a fração 15/20:",
+        "options": [
+            {"key": "a", "text": "3/4"},
+            {"key": "b", "text": "5/6"},
+            {"key": "c", "text": "1/2"},
+            {"key": "d", "text": "4/5"},
+        ],
+        "correct_option_key": "a",
+        "explanation": "Dividindo numerador e denominador por 5: 15/20 = 3/4.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Resolva: 2x - 3 = 11. Qual o valor de x?",
+        "options": [
+            {"key": "a", "text": "4"},
+            {"key": "b", "text": "5"},
+            {"key": "c", "text": "7"},
+            {"key": "d", "text": "8"},
+        ],
+        "correct_option_key": "c",
+        "explanation": "2x = 11 + 3 = 14, logo x = 14 ÷ 2 = 7.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Qual é o MMC (mínimo múltiplo comum) entre 4 e 6?",
+        "options": [
+            {"key": "a", "text": "10"},
+            {"key": "b", "text": "12"},
+            {"key": "c", "text": "24"},
+            {"key": "d", "text": "6"},
+        ],
+        "correct_option_key": "b",
+        "explanation": "Os múltiplos de 4 e 6 se encontram primeiro em 12: MMC(4,6) = 12.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": (
+            "Um caminhão percorre 300km com 25 litros de combustível. Qual o consumo "
+            "médio, em km/l?"
+        ),
+        "options": [
+            {"key": "a", "text": "10"},
+            {"key": "b", "text": "12"},
+            {"key": "c", "text": "15"},
+            {"key": "d", "text": "20"},
+        ],
+        "correct_option_key": "b",
+        "explanation": "300 ÷ 25 = 12 km/l.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Qual é a área de um retângulo com base 8cm e altura 5cm?",
+        "options": [
+            {"key": "a", "text": "13cm²"},
+            {"key": "b", "text": "40cm²"},
+            {"key": "c", "text": "26cm²"},
+            {"key": "d", "text": "45cm²"},
+        ],
+        "correct_option_key": "b",
+        "explanation": "Área do retângulo = base × altura = 8 × 5 = 40cm².",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Converta a fração 3/8 em número decimal:",
+        "options": [
+            {"key": "a", "text": "0,375"},
+            {"key": "b", "text": "0,38"},
+            {"key": "c", "text": "0,325"},
+            {"key": "d", "text": "0,3"},
+        ],
+        "correct_option_key": "a",
+        "explanation": "3 ÷ 8 = 0,375.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Um produto de R$ 120 sofre um aumento de 25%. Qual o novo preço?",
+        "options": [
+            {"key": "a", "text": "R$ 130"},
+            {"key": "b", "text": "R$ 140"},
+            {"key": "c", "text": "R$ 150"},
+            {"key": "d", "text": "R$ 145"},
+        ],
+        "correct_option_key": "c",
+        "explanation": "25% de 120 é 30. 120 + 30 = 150.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Qual é o resultado de (-3) + 5 - 8?",
+        "options": [
+            {"key": "a", "text": "-6"},
+            {"key": "b", "text": "0"},
+            {"key": "c", "text": "6"},
+            {"key": "d", "text": "-16"},
+        ],
+        "correct_option_key": "a",
+        "explanation": "-3 + 5 = 2. Depois, 2 - 8 = -6.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Numa turma de 40 alunos, 60% são meninas. Quantos meninos há?",
+        "options": [
+            {"key": "a", "text": "24"},
+            {"key": "b", "text": "16"},
+            {"key": "c", "text": "20"},
+            {"key": "d", "text": "12"},
+        ],
+        "correct_option_key": "b",
+        "explanation": "60% de 40 são 24 meninas. Os 40% restantes são meninos: 40 - 24 = 16.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Qual é o valor de 2³ + 3²?",
+        "options": [
+            {"key": "a", "text": "12"},
+            {"key": "b", "text": "13"},
+            {"key": "c", "text": "17"},
+            {"key": "d", "text": "18"},
+        ],
+        "correct_option_key": "c",
+        "explanation": "2³ = 8 e 3² = 9. 8 + 9 = 17.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": (
+            "A razão entre dois números é 3:5. Se o menor deles vale 12, quanto vale o maior?"
+        ),
+        "options": [
+            {"key": "a", "text": "15"},
+            {"key": "b", "text": "18"},
+            {"key": "c", "text": "20"},
+            {"key": "d", "text": "24"},
+        ],
+        "correct_option_key": "c",
+        "explanation": "12 ÷ 3 = 4 (valor de cada parte). O maior vale 5 × 4 = 20.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Qual é o próximo número da sequência: 2, 4, 8, 16, ...?",
+        "options": [
+            {"key": "a", "text": "20"},
+            {"key": "b", "text": "24"},
+            {"key": "c", "text": "32"},
+            {"key": "d", "text": "30"},
+        ],
+        "correct_option_key": "c",
+        "explanation": "Cada termo é o dobro do anterior (razão 2): 16 × 2 = 32.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Quanto é 1/2 + 1/3?",
+        "options": [
+            {"key": "a", "text": "2/5"},
+            {"key": "b", "text": "5/6"},
+            {"key": "c", "text": "1/6"},
+            {"key": "d", "text": "2/6"},
+        ],
+        "correct_option_key": "b",
+        "explanation": "No denominador comum 6: 3/6 + 2/6 = 5/6.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": (
+            "Um terreno retangular mede 12m de comprimento por 8m de largura. Qual o seu perímetro?"
+        ),
+        "options": [
+            {"key": "a", "text": "20m"},
+            {"key": "b", "text": "40m"},
+            {"key": "c", "text": "96m"},
+            {"key": "d", "text": "48m"},
+        ],
+        "correct_option_key": "b",
+        "explanation": "Perímetro = 2 × (comprimento + largura) = 2 × (12 + 8) = 40m.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": (
+            "Se 8 operários constroem um muro em 15 dias, quantos dias levariam 4 "
+            "operários para construir o mesmo muro, no mesmo ritmo?"
+        ),
+        "options": [
+            {"key": "a", "text": "7,5"},
+            {"key": "b", "text": "30"},
+            {"key": "c", "text": "20"},
+            {"key": "d", "text": "10"},
+        ],
+        "correct_option_key": "b",
+        "explanation": (
+            "Regra de três inversa (menos operários, mais dias): 8 × 15 = 4 × x → x = 30."
+        ),
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": "Qual o valor de x na equação x/4 = 9?",
+        "options": [
+            {"key": "a", "text": "13"},
+            {"key": "b", "text": "2,25"},
+            {"key": "c", "text": "36"},
+            {"key": "d", "text": "5"},
+        ],
+        "correct_option_key": "c",
+        "explanation": "x = 9 × 4 = 36.",
+    },
+    {
+        "subject": SUBJECT_MATEMATICA,
+        "statement": (
+            "Numa pesquisa com 200 pessoas, 30% preferem o produto A. Quantas pessoas "
+            "preferem o produto A?"
+        ),
+        "options": [
+            {"key": "a", "text": "40"},
+            {"key": "b", "text": "50"},
+            {"key": "c", "text": "60"},
+            {"key": "d", "text": "70"},
+        ],
+        "correct_option_key": "c",
+        "explanation": "200 × 0,30 = 60.",
     },
 )
 
