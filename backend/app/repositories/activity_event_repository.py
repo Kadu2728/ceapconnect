@@ -73,6 +73,30 @@ class ActivityEventRepository:
         rows = (await self._db.execute(stmt)).all()
         return {row[0]: int(row[1]) for row in rows}
 
+    async def count_by_names(
+        self, names: list[ActivityEventName], *, since: datetime | None = None
+    ) -> dict[str, int]:
+        """Contagem global de eventos por nome, sem filtro de candidato.
+
+        Base do Learning Loop (F2 — `journey_os_metrics_service`): CTR do
+        Next Best Action e taxa de retomada do Modo Resgate são métricas de
+        produto, não por candidato/coorte, então esta é a única leitura
+        deste repositório que não recebe `candidate_profile_id(s)`.
+        """
+        if not names:
+            return {}
+
+        stmt = (
+            select(ActivityEvent.name, func.count())
+            .where(ActivityEvent.name.in_(names))
+            .group_by(ActivityEvent.name)
+        )
+        if since is not None:
+            stmt = stmt.where(ActivityEvent.occurred_at >= since)
+
+        rows = (await self._db.execute(stmt)).all()
+        return {row[0]: int(row[1]) for row in rows}
+
     async def list_recent_for_profile(
         self, candidate_profile_id: uuid.UUID, *, limit: int = 100
     ) -> list[ActivityEvent]:

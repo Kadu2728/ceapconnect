@@ -80,6 +80,36 @@ Pré-requisito em andamento para o harness: `candidate_profiles.status` (rótulo
 
 ---
 
+## Candidate Journey OS
+
+Evolução do produto de "Predict → Alert" (o sistema de risco acima, que só alerta o coordenador) para "Predict → Decide → Act → Measure → Learn" — uma camada que decide a melhor próxima ação do candidato e adapta a experiência a ela, não só mede quem está em risco.
+
+```
+CandidateProfile
+  → activity_events (vocabulário estendido — ver app/models/activity_event.py)
+  → candidate_state_service.py     → CandidateState (GET /candidate-state)
+      (reaproveita risk_feature_service, nunca deriva sinal duas vezes)
+        → next_best_action_service.py  → NextBestAction (GET /next-best-action)
+        → frontend: Modo Resgate (gate por CandidateState.momentum)
+Toda decisão/ação emite activity_event → journey_os_metrics_service mede
+Signal → Decision → Action → Outcome (GET /admin/journey-os/metrics)
+```
+
+Quatro peças, cada uma isolada das outras (mesmo princípio do sistema de risco):
+
+- **Candidate State** (`app/core/candidate_state_scoring.py` + `app/services/candidate_state_service.py`) — computado sob demanda (nunca em lote/cron como `RiskScore`, porque precisa refletir o carregamento de tela seguinte, não a próxima hora), reaproveita as mesmas queries batched de `risk_feature_service`. Produz `momentum` (`fluid`/`stable`/`friction`/`stalled`/`recovery`) — mecanismo de decisão interno, nunca exibido ao candidato como texto (mesmo princípio do score de risco: o candidato nunca vê o próprio risco).
+- **Next Best Action Engine** (`app/core/next_best_action_rules.py` + `app/services/next_best_action_service.py`) — regra pura, tabela de decisão por prioridade (documento pendente > responsável atrasado > prova próxima > jornada parada > nenhuma recomendação). Mesma interface trocável de `RiskScorer`: evoluir para um modelo aprendido é escrever uma segunda implementação, sem tocar no service.
+- **Zero-Click Recovery + Modo Resgate** — deliberadamente sem tabela nova: o ponto de retomada é derivado de `current_journey_step_key` + próxima missão pendente, ambos já existentes. No frontend (`features/journey-os/`), `RecoveryModeCard` troca a grade inteira do Dashboard por um único card quando `momentum` é `stalled`/`recovery` — Zero-Click Recovery e Modo Resgate são a mesma superfície de UI, não dois mecanismos separados.
+- **Learning Loop** (`app/core/journey_os_metrics.py` + `app/services/journey_os_metrics_service.py`) — CTR do NBA e taxa de retomada do Modo Resgate, agregados de `activity_events` (`GET /admin/journey-os/metrics`, admin-only). Mede o que já é emitido de ponta a ponta hoje; `nba_completed`/`recovery_completed`/`recovery_exited` ficam reservados no vocabulário até existir um jeito honesto de detectar conclusão sem inferir causalidade.
+
+`POST /candidate-state/events` é o único ponto de entrada para eventos disparados pelo próprio cliente (`nba_clicked`, `step_resumed`, `recovery_*`) — vocabulário deliberadamente restrito a eventos sem fluxo autoritativo de servidor, para o candidato não conseguir "declarar" um evento que deveria vir de uma ação real no backend.
+
+### Backlog arquitetado, não construído
+
+Experience Decision Engine/Adaptive UX completo, Experimentation Engine (A/B), Journey Intelligence (fricção por etapa + recomendações — nunca altera a jornada em produção automaticamente), Candidate Journey Simulation (nunca promete aprovação), Eu no CEAP, Quests do mundo real, Memória de Jornada, e a evolução heurística→modelo treinado do próprio motor de risco (harness de backtest, ver seção acima). O ponto de extensão real para todas essas peças futuras é o contrato do Candidate State + Next Best Action — elas consumiriam os dois do mesmo jeito que o Modo Resgate consome hoje, sem exigir nenhuma interface nova a ser escrita agora.
+
+---
+
 ## Multi-tenancy (planejado)
 
 ### Por que
