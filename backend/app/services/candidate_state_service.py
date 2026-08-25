@@ -15,6 +15,7 @@ sobre o mesmo candidato) em vez de esperar o job de risco passar.
 """
 
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,8 +23,8 @@ from app.core.candidate_state_scoring import STATE_VERSION, classify_momentum
 from app.models.candidate_document import REQUIRED_DOCUMENT_TYPES
 from app.models.user import User
 from app.repositories.candidate_document_repository import CandidateDocumentRepository
-from app.schemas.candidate_state import CandidateStateResponse
-from app.services import journey_service, risk_feature_service
+from app.schemas.candidate_state import CandidateStateResponse, CandidateTrackableEvent
+from app.services import activity_event_service, journey_service, risk_feature_service
 from app.services.candidate_profile_service import get_profile_or_raise
 
 _REQUIRED_DOCUMENT_COUNT = len(REQUIRED_DOCUMENT_TYPES)
@@ -59,4 +60,20 @@ async def get_candidate_state(db: AsyncSession, user: User) -> CandidateStateRes
         pending_required_documents=pending_documents,
         days_to_exam=days_to_exam,
         guardian_training_overdue=features.guardian_training_overdue,
+    )
+
+
+async def track_client_event(
+    db: AsyncSession, user: User, *, name: CandidateTrackableEvent, props: dict[str, Any]
+) -> None:
+    """Registra um evento disparado pelo próprio cliente (clique, entrada/saída de modo).
+
+    `name` já vem tipado como `CandidateTrackableEvent` (validado pelo
+    Pydantic no schema do request) — nunca o vocabulário completo de
+    `ActivityEventName`, para o candidato não conseguir gerar um evento que
+    deveria ser autoritativo do servidor (ver docstring do schema).
+    """
+    profile = await get_profile_or_raise(db, user)
+    await activity_event_service.track_committed(
+        db, candidate_profile_id=profile.id, name=name, props=props
     )

@@ -7,10 +7,33 @@ missão, XP) continua usando `GET /dashboard`.
 """
 
 from datetime import datetime
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 from app.core.candidate_state_scoring import CandidateMomentum
+
+#: Subconjunto do vocabulário de `app.models.activity_event` que o próprio
+#: candidato pode disparar client-side (cliques, entrada/saída de modo).
+#: Deliberadamente NÃO inclui eventos que já têm um fluxo de servidor
+#: autoritativo (`step_completed`, `document_uploaded`, `mission_completed`,
+#: `nba_generated`...) — um endpoint genérico não pode virar porta para o
+#: candidato "declarar" um evento que deveria vir de uma ação real no
+#: backend.
+CandidateTrackableEvent = Literal[
+    "nba_clicked",
+    "step_resumed",
+    "recovery_entered",
+    "recovery_completed",
+    "recovery_exited",
+]
+
+
+class TrackEventRequest(BaseModel):
+    """Corpo de `POST /candidate-state/events`."""
+
+    name: CandidateTrackableEvent
+    props: dict[str, Any] = Field(default_factory=dict)
 
 
 class CandidateStateResponse(BaseModel):
