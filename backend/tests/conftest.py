@@ -19,9 +19,15 @@ para a outra:
   Se `DATABASE_URL` não apontar para um banco alcançável (ex.: rodando fora
   do CI, sem rede até o Postgres), os testes de integração são pulados com
   um motivo explícito em vez de quebrar a suíte inteira — os testes
-  unitários continuam rodando normalmente.
+  unitários continuam rodando normalmente. A checagem de alcançabilidade
+  roda **uma vez por sessão de teste** (`_database_reachable`, com timeout
+  curto), não uma vez por teste — sem isso, cada teste de integração pagaria
+  de novo o timeout de conexão (dezenas de segundos por tentativa em redes
+  sem rota até o banco), tornando a suíte inteira lenta demais para rodar
+  localmente à medida que mais testes de integração são adicionados.
 """
 
+import asyncio
 import uuid
 from collections.abc import AsyncGenerator
 
@@ -36,16 +42,33 @@ from app.models.journey_step import JourneyStep
 from app.models.user import User
 
 _DEFAULT_STEP_KEY = "inscricao"
+# Timeout curto de propósito: só precisa bastar para um Postgres de verdade
+# responder (CI, ou um Postgres local) — uma rede sem rota até o host (este
+# sandbox de desenvolvimento, ver DEPLOY.md) deve falhar rápido, não pendurar
+# a suíte inteira no timeout default do SO (dezenas de segundos).
+_DB_REACHABILITY_TIMEOUT_SECONDS = 5.0
+
+
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def _database_reachable() -> bool:
+    """Só paga o custo do timeout de conexão uma vez por sessão inteira de testes."""
+    try:
+        connection = await asyncio.wait_for(
+            engine.connect(), timeout=_DB_REACHABILITY_TIMEOUT_SECONDS
+        )
+    except Exception:  # noqa: BLE001 — motivo de skip, não falha de asserção
+        return False
+    await connection.close()
+    return True
 
 
 @pytest_asyncio.fixture
-async def db_session() -> AsyncGenerator[AsyncSession]:
+async def db_session(_database_reachable: bool) -> AsyncGenerator[AsyncSession]:
     """Uma sessão por teste, presa a uma transação que nunca é commitada de fato."""
-    try:
-        connection = await engine.connect()
-    except Exception as exc:  # noqa: BLE001 — motivo de skip, não falha de asserção
-        pytest.skip(f"Banco de dados inalcançável ({settings.database_url!r}): {exc}")
+    if not _database_reachable:
+        pytest.skip(f"Banco de dados inalcançável ({settings.database_url!r}).")
 
+    connection = await engine.connect()
     outer_transaction = await connection.begin()
     session_factory = async_sessionmaker(
         bind=connection,
