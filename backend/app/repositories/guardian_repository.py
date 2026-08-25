@@ -23,6 +23,16 @@ class GuardianRepository:
         stmt = select(Guardian).where(Guardian.id == guardian_id)
         return (await self._db.execute(stmt)).scalar_one_or_none()
 
+    async def get_by_confirmation_token(self, token: str) -> Guardian | None:
+        """Resolve o responsável pelo link mágico (`/guardian-portal/{token}`).
+
+        É a única forma de acesso do próprio responsável — ele não tem conta
+        no app, então posse do token substitui login (mesmo racional de um
+        link de reset de senha).
+        """
+        stmt = select(Guardian).where(Guardian.confirmation_token == token)
+        return (await self._db.execute(stmt)).scalar_one_or_none()
+
     async def get_primary_for_profile(self, candidate_profile_id: uuid.UUID) -> Guardian | None:
         """O responsável principal do candidato (ou None se nenhum cadastrado)."""
         stmt = select(Guardian).where(

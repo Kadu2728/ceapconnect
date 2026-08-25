@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     # --- CORS ---
     cors_origins: str = "http://localhost:3000"
 
+    # --- Frontend (link mágico do responsável) ---
+    frontend_url: str = Field(
+        default="http://localhost:3000",
+        description=(
+            "Origem pública do frontend, usada para montar links absolutos "
+            "enviados fora do app (ex.: confirmação do responsável por "
+            "e-mail/WhatsApp). Sem barra final."
+        ),
+    )
+
     # --- Assistente IA (EPIC 11 — Google Gemini) ---
     gemini_api_key: str = Field(
         default="",

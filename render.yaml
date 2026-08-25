@@ -62,6 +62,12 @@ services:
       - key: CORS_ORIGINS
         sync: false
 
+      # --- Frontend (link mágico do responsável) ---
+      # Mesma origem do frontend em produção — usada para montar links
+      # absolutos enviados fora do app (confirmação do responsável).
+      - key: FRONTEND_URL
+        value: https://ceapconnect.vercel.app
+
       # --- Assistente IA (EPIC 11 — Google Gemini) ---
       # Sem a chave, o assistente segue funcionando, mas responde com uma
       # mensagem de "não configurado" em vez de respostas reais.

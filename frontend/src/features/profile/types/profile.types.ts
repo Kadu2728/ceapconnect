@@ -28,6 +28,13 @@ export interface Profile {
   guardian_phone: string | null;
   guardian_email: string | null;
   guardian_notified_at: string | null;
+  /** Formação obrigatória do responsável (item 5 do backlog). */
+  guardian_training_date: string | null;
+  guardian_training_notified_at: string | null;
+  guardian_training_confirmed_at: string | null;
+  guardian_training_attended_at: string | null;
+  /** Link mágico do Portal do Responsável; `null` = sem responsável cadastrado. */
+  guardian_portal_url: string | null;
 }
 
 export interface ProfileUpdateInput {
@@ -42,4 +49,10 @@ export interface GuardianEmailNoticeResult {
   sent: boolean;
   message: string;
   guardian_notified_at: string | null;
+}
+
+export interface GuardianTrainingEmailNoticeResult {
+  sent: boolean;
+  message: string;
+  guardian_training_notified_at: string | null;
 }

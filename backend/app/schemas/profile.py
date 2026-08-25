@@ -40,6 +40,14 @@ class ProfileResponse(BaseModel):
     guardian_phone: str | None
     guardian_email: str | None
     guardian_notified_at: datetime | None
+    # Formação obrigatória do responsável (item 5 do backlog — confirmação
+    # de presença pelo próprio responsável, via link mágico).
+    guardian_training_date: date | None
+    guardian_training_notified_at: datetime | None
+    guardian_training_confirmed_at: datetime | None
+    guardian_training_attended_at: datetime | None
+    # None = sem responsável cadastrado ainda (não há link para gerar).
+    guardian_portal_url: str | None
 
 
 class ProfileUpdateRequest(BaseModel):
@@ -95,3 +103,11 @@ class GuardianEmailNoticeResult(BaseModel):
     sent: bool
     message: str
     guardian_notified_at: datetime | None
+
+
+class GuardianTrainingEmailNoticeResult(BaseModel):
+    """Payload de `POST /api/v1/profile/guardian/notify-training`."""
+
+    sent: bool
+    message: str
+    guardian_training_notified_at: datetime | None

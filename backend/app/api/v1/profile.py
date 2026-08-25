@@ -10,7 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import get_current_user
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.profile import GuardianEmailNoticeResult, ProfileResponse, ProfileUpdateRequest
+from app.schemas.profile import (
+    GuardianEmailNoticeResult,
+    GuardianTrainingEmailNoticeResult,
+    ProfileResponse,
+    ProfileUpdateRequest,
+)
 from app.schemas.response import ApiResponse
 from app.services import profile_service
 
@@ -57,4 +62,19 @@ async def notify_guardian_email(
 ) -> ApiResponse[GuardianEmailNoticeResult]:
     """Envia o e-mail de aviso da entrevista ao responsável (EPIC 17)."""
     data = await profile_service.notify_guardian_email(db, current_user)
+    return ApiResponse(success=True, message=data.message, data=data)
+
+
+@router.post(
+    "/guardian/notify-training",
+    response_model=ApiResponse[GuardianTrainingEmailNoticeResult],
+    summary="Avisa o responsável por e-mail sobre a formação obrigatória",
+)
+async def notify_guardian_training(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[GuardianTrainingEmailNoticeResult]:
+    """Envia o e-mail de aviso da formação obrigatória, com o link de
+    confirmação de presença (item 5 do backlog)."""
+    data = await profile_service.notify_guardian_training_email(db, current_user)
     return ApiResponse(success=True, message=data.message, data=data)

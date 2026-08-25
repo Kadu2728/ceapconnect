@@ -17,6 +17,7 @@ ver `app.services.achievement_service` para o desbloqueio simbólico
 (sem XP) do marco "responsável concluiu a formação".
 """
 
+import secrets
 import uuid
 from datetime import datetime
 
@@ -26,6 +27,17 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 from app.models.mixins import TimestampMixin
+
+
+def _generate_confirmation_token() -> str:
+    """Token de posse do link mágico do responsável — 32 bytes, URL-safe.
+
+    Não é um segredo derivado de nada (ex.: hash do id) de propósito: um
+    token opaco e imprevisível é o que torna seguro expor a confirmação sem
+    exigir conta/login do responsável (mesmo racional de link de reset de
+    senha — posse do link autoriza a ação).
+    """
+    return secrets.token_urlsafe(32)
 
 
 class Guardian(Base, TimestampMixin):
@@ -54,6 +66,19 @@ class Guardian(Base, TimestampMixin):
     is_primary: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default="true", nullable=False
     )
+    # Link mágico do responsável (item 5 do backlog — "confirmação de
+    # presença pelo próprio responsável"): identifica o responsável sem
+    # exigir conta/login, em `GET/POST /guardian-portal/{token}`. Único por
+    # responsável, gerado na criação — nunca reaproveitado nem regenerado
+    # automaticamente (um link já enviado por e-mail/WhatsApp precisa
+    # continuar válido).
+    confirmation_token: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+        index=True,
+        default=_generate_confirmation_token,
+        nullable=False,
+    )
 
     # --- Jornada do responsável (formação obrigatória) ----------------------
     # Confirmação de presença (o responsável ou o candidato avisa que vai) —
@@ -66,6 +91,11 @@ class Guardian(Base, TimestampMixin):
     )
     # Substitui `CandidateProfile.guardian_notified_at` (EPIC 17).
     interview_notice_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Aviso da formação obrigatória (distinto do aviso da entrevista acima —
+    # são dois eventos diferentes, com datas diferentes).
+    training_notice_sent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

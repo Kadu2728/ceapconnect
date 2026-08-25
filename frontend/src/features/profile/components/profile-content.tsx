@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 
 import { GuardianNoticeCard } from "@/features/profile/components/guardian-notice-card";
+import { GuardianTrainingNoticeCard } from "@/features/profile/components/guardian-training-notice-card";
 import { ProfileEditForm } from "@/features/profile/components/profile-edit-form";
 import { ProfileHeader } from "@/features/profile/components/profile-header";
 import { ProfileStats } from "@/features/profile/components/profile-stats";
@@ -37,6 +38,9 @@ export function ProfileContent({ data }: ProfileContentProps) {
       </motion.div>
       <motion.div variants={itemVariants}>
         <ProfileStats stats={data.stats} />
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <GuardianTrainingNoticeCard profile={data} />
       </motion.div>
       <motion.div variants={itemVariants}>
         <GuardianNoticeCard profile={data} />

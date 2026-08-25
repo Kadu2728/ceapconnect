@@ -6,7 +6,7 @@ também desbloqueia a conquista "Perfil Completo" (antes inalcançável), fechan
 mais um laço da gamificação.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,11 +16,13 @@ from app.models.candidate_profile import CandidateProfile
 from app.models.reward_redemption import STATUS_CANCELLED
 from app.models.user import User
 from app.repositories.achievement_repository import AchievementRepository
+from app.repositories.cohort_repository import CohortRepository
 from app.repositories.guardian_repository import GuardianRepository
 from app.repositories.mission_repository import MissionProgressRepository
 from app.repositories.reward_repository import RewardRedemptionRepository
 from app.schemas.profile import (
     GuardianEmailNoticeResult,
+    GuardianTrainingEmailNoticeResult,
     ProfileResponse,
     ProfileStats,
     ProfileUpdateRequest,
@@ -85,6 +87,38 @@ async def notify_guardian_email(db: AsyncSession, user: User) -> GuardianEmailNo
     )
 
 
+async def notify_guardian_training_email(
+    db: AsyncSession, user: User
+) -> GuardianTrainingEmailNoticeResult:
+    """Envia o e-mail de aviso da formação obrigatória, com o link de
+    confirmação (item 5 do backlog)."""
+    profile = await get_profile_or_raise(db, user)
+    guardian = await GuardianRepository(db).get_primary_for_profile(profile.id)
+    training_date = await _resolve_training_date(db, profile)
+
+    sent, message = await guardian_notice_service.send_training_notice_email(
+        user=user, training_date=training_date, guardian=guardian
+    )
+    if sent and guardian is not None:
+        guardian.training_notice_sent_at = datetime.now(UTC)
+        await db.commit()
+
+    return GuardianTrainingEmailNoticeResult(
+        sent=sent,
+        message=message,
+        guardian_training_notified_at=(
+            guardian.training_notice_sent_at if guardian is not None else None
+        ),
+    )
+
+
+async def _resolve_training_date(db: AsyncSession, profile: CandidateProfile) -> date | None:
+    if profile.cohort_id is None:
+        return None
+    cohort = await CohortRepository(db).get_by_id(profile.cohort_id)
+    return cohort.guardian_training_date if cohort is not None else None
+
+
 async def _build_response(
     db: AsyncSession, user: User, profile: CandidateProfile
 ) -> ProfileResponse:
@@ -100,6 +134,7 @@ async def _build_response(
         1 for redemption in redemptions.values() if redemption.status != STATUS_CANCELLED
     )
     guardian = await GuardianRepository(db).get_primary_for_profile(profile.id)
+    training_date = await _resolve_training_date(db, profile)
 
     return ProfileResponse(
         id=user.id,
@@ -120,6 +155,21 @@ async def _build_response(
         guardian_phone=guardian.phone if guardian is not None else None,
         guardian_email=guardian.email if guardian is not None else None,
         guardian_notified_at=guardian.interview_notice_sent_at if guardian is not None else None,
+        guardian_training_date=training_date,
+        guardian_training_notified_at=(
+            guardian.training_notice_sent_at if guardian is not None else None
+        ),
+        guardian_training_confirmed_at=(
+            guardian.training_confirmed_at if guardian is not None else None
+        ),
+        guardian_training_attended_at=(
+            guardian.training_attended_at if guardian is not None else None
+        ),
+        guardian_portal_url=(
+            guardian_notice_service.build_confirmation_url(guardian)
+            if guardian is not None
+            else None
+        ),
     )
 
 
