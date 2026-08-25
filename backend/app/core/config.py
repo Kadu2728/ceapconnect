@@ -74,6 +74,14 @@ class Settings(BaseSettings):
             "prova, até o produto ter uma data real configurável por edital."
         ),
     )
+    exam_location: str = Field(
+        default="Unidade CEAP — Pedreira, São Paulo/SP",
+        description=(
+            "Endereço do dia da prova, exibido na logística do Dashboard perto "
+            "da data (mesmo racional provisório de INTERVIEW_LOCATION, até o "
+            "produto ter um local por edital/coorte)."
+        ),
+    )
 
     # --- Envolver o responsável (EPIC 17) ---
     interview_offset_days: int = Field(
@@ -134,6 +142,19 @@ class Settings(BaseSettings):
         description=(
             "Intervalo do job in-process (APScheduler) que recalcula o risco de "
             "evasão de todos os candidatos ativos."
+        ),
+    )
+
+    # --- Lembretes automáticos ---
+    reminder_check_interval_minutes: int = Field(
+        default=720,
+        description=(
+            "Intervalo do job in-process que verifica e dispara lembretes "
+            "(prova, entrevista, documentação pendente). Deliberadamente não "
+            "reaproveita RISK_RECOMPUTE_INTERVAL_MINUTES: lembrete é "
+            "comunicação direta ao candidato, não precisa da mesma cadência "
+            "de uma métrica interna do coordenador. Default 12h — duas "
+            "checagens por dia bastam para janelas medidas em dias inteiros."
         ),
     )
 

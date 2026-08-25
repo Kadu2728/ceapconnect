@@ -20,13 +20,14 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from app.services import risk_service
+from app.services import reminder_service, risk_service
 
 logger = logging.getLogger("ceap_connect.scheduler")
 
 _scheduler: AsyncIOScheduler | None = None
 _RISK_JOB_ID = "risk-recompute"
 _COHORT_XP_JOB_ID = "cohort-xp-standing-refresh"
+_REMINDER_JOB_ID = "reminder-check"
 
 
 async def _run_recompute() -> None:
@@ -47,6 +48,27 @@ async def _run_recompute() -> None:
             )
         except Exception:  # noqa: BLE001 — o job nunca pode derrubar o processo web
             logger.exception("Falha no recálculo agendado de risco")
+            await db.rollback()
+
+
+async def _run_reminder_check() -> None:
+    """Executa um ciclo de verificação de lembretes, numa sessão de banco própria do job.
+
+    Qualquer falha é logada e contida aqui — nunca propaga a ponto de derrubar
+    o scheduler ou o processo web (mesmo racional de `_run_recompute`).
+    """
+    async with AsyncSessionLocal() as db:
+        try:
+            summary = await reminder_service.check_and_send_reminders(db)
+            logger.info(
+                "Verificação de lembretes concluída: %d candidato(s) checado(s), "
+                "%d lembrete(s) enviado(s), %.2fs.",
+                summary.candidates_checked,
+                summary.reminders_sent,
+                summary.duration_seconds,
+            )
+        except Exception:  # noqa: BLE001 — o job nunca pode derrubar o processo web
+            logger.exception("Falha na verificação agendada de lembretes")
             await db.rollback()
 
 
@@ -96,6 +118,15 @@ def start_scheduler() -> None:
         max_instances=1,
         misfire_grace_time=60,
     )
+    scheduler.add_job(
+        _run_reminder_check,
+        trigger="interval",
+        minutes=settings.reminder_check_interval_minutes,
+        id=_REMINDER_JOB_ID,
+        coalesce=True,
+        max_instances=1,
+        misfire_grace_time=60,
+    )
     scheduler.start()
     _scheduler = scheduler
 
@@ -105,6 +136,7 @@ def start_scheduler() -> None:
     # produção quanto para demonstração.
     asyncio.create_task(_run_recompute())  # noqa: RUF006 — fire-and-forget intencional
     asyncio.create_task(_run_cohort_xp_refresh())  # noqa: RUF006 — fire-and-forget intencional
+    asyncio.create_task(_run_reminder_check())  # noqa: RUF006 — fire-and-forget intencional
 
     logger.info(
         "Job de recálculo de risco agendado a cada %d minuto(s).",
@@ -113,6 +145,10 @@ def start_scheduler() -> None:
     logger.info(
         "Job de refresh de cohort_xp_standing agendado a cada %d minuto(s).",
         settings.cohort_xp_refresh_interval_minutes,
+    )
+    logger.info(
+        "Job de verificação de lembretes agendado a cada %d minuto(s).",
+        settings.reminder_check_interval_minutes,
     )
 
 

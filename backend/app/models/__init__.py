@@ -23,6 +23,7 @@ from app.models.mission import Mission
 from app.models.mission_progress import MissionProgress
 from app.models.notification import Notification
 from app.models.push_subscription import PushSubscription
+from app.models.reminder_log import ReminderLog
 from app.models.reward import Reward
 from app.models.reward_redemption import RewardRedemption
 from app.models.risk_score import RiskScore
@@ -50,6 +51,7 @@ __all__ = [
     "MissionProgress",
     "Notification",
     "PushSubscription",
+    "ReminderLog",
     "Reward",
     "RewardRedemption",
     "RiskScore",

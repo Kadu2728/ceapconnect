@@ -10,9 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import verify_internal_api_key
 from app.core.database import get_db
+from app.schemas.reminder import ReminderCheckSummary
 from app.schemas.response import ApiResponse
 from app.schemas.risk import RecomputeSummary
-from app.services import risk_service
+from app.services import reminder_service, risk_service
 
 router = APIRouter(prefix="/internal", tags=["Interno"])
 
@@ -27,3 +28,15 @@ async def recompute_risk(db: AsyncSession = Depends(get_db)) -> ApiResponse[Reco
     """Dispara manualmente o mesmo recálculo que o job agendado executa periodicamente."""
     data = await risk_service.recompute_all(db)
     return ApiResponse(success=True, message="Recálculo de risco concluído.", data=data)
+
+
+@router.post(
+    "/reminders/check",
+    response_model=ApiResponse[ReminderCheckSummary],
+    summary="Verifica e dispara os lembretes automáticos pendentes",
+    dependencies=[Depends(verify_internal_api_key)],
+)
+async def check_reminders(db: AsyncSession = Depends(get_db)) -> ApiResponse[ReminderCheckSummary]:
+    """Dispara manualmente a mesma verificação que o job agendado executa periodicamente."""
+    data = await reminder_service.check_and_send_reminders(db)
+    return ApiResponse(success=True, message="Verificação de lembretes concluída.", data=data)
