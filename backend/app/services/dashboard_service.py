@@ -198,6 +198,7 @@ def _build_journey_progress(steps: list[JourneyStep], current_step_key: str) -> 
         JourneyStepItem(
             key=step.key,
             label=step.label,
+            description=step.description,
             status=(
                 "completed"
                 if step.order < current_order

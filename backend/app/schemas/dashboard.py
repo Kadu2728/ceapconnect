@@ -17,10 +17,18 @@ JourneyStepStatus = Literal["completed", "current", "pending"]
 
 
 class JourneyStepItem(BaseModel):
-    """Uma etapa da timeline da jornada, já com o status do candidato."""
+    """Uma etapa da timeline da jornada, já com o status do candidato.
+
+    `description` (Candidate Journey OS): por que esta etapa importa, não só
+    o nome dela — vem do catálogo (`JourneyStep.description`, já existia no
+    banco, mas nunca tinha sido exposto). É o que transforma a barra de
+    progresso num mapa (a jornada responde "por que isso importa", não só
+    "onde estou").
+    """
 
     key: str
     label: str
+    description: str
     status: JourneyStepStatus
 
 

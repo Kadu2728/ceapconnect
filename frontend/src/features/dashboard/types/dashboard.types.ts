@@ -11,6 +11,8 @@ export type JourneyStepStatus = "completed" | "current" | "pending";
 export interface JourneyStep {
   key: string;
   label: string;
+  /** Por que esta etapa importa — transforma a lista em mapa, não só barra. */
+  description: string;
   status: JourneyStepStatus;
 }
 

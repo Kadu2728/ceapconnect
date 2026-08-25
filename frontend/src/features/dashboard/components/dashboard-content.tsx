@@ -13,6 +13,10 @@ import { NextRewardCard } from "@/features/dashboard/components/next-reward-card
 import { UpcomingEventsList } from "@/features/dashboard/components/upcoming-events-list";
 import { XpBadge } from "@/features/dashboard/components/xp-badge";
 import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
+import { NextBestActionCard } from "@/features/journey-os/components/next-best-action-card";
+import { RecoveryModeCard } from "@/features/journey-os/components/recovery-mode-card";
+import { useCandidateState } from "@/features/journey-os/hooks/use-candidate-state";
+import { useNextBestAction } from "@/features/journey-os/hooks/use-next-best-action";
 import { LevelHeader } from "@/features/rewards/components/level-header";
 import {
   getStaggerContainerVariants,
@@ -22,6 +26,8 @@ import {
 interface DashboardContentProps {
   data: DashboardData;
 }
+
+const STALLED_MOMENTUMS = new Set(["stalled", "recovery"]);
 
 /**
  * Composição do Dashboard (EPIC 03) com os dados reais já carregados.
@@ -36,6 +42,37 @@ export function DashboardContent({ data }: DashboardContentProps) {
   const shouldReduceMotion = Boolean(useReducedMotion());
   const containerVariants = getStaggerContainerVariants(shouldReduceMotion);
   const itemVariants = getStaggerItemVariants(shouldReduceMotion);
+
+  const candidateStateQuery = useCandidateState();
+  const nextBestActionQuery = useNextBestAction();
+  const nextBestAction = nextBestActionQuery.data ?? null;
+
+  // Modo Resgate (N4): só troca a experiência inteira quando o momentum
+  // pede *e* existe uma ação concreta a mostrar — sem uma ação real, não
+  // há nada para "reduzir a interface" em torno, então a jornada completa
+  // continua sendo a melhor tela disponível.
+  const isRecoveryMode =
+    STALLED_MOMENTUMS.has(candidateStateQuery.data?.momentum ?? "") &&
+    nextBestAction !== null;
+
+  if (isRecoveryMode && nextBestAction) {
+    const currentStep = data.journey.steps.find(
+      (step) => step.key === data.journey.current_step_key,
+    );
+    return (
+      <motion.div initial="hidden" animate="visible" variants={containerVariants}>
+        <motion.div variants={itemVariants} className="mb-6">
+          <Greeting name={data.greeting_name} />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <RecoveryModeCard
+            action={nextBestAction}
+            currentStepLabel={currentStep?.label ?? data.journey.current_step_key}
+          />
+        </motion.div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -66,7 +103,11 @@ export function DashboardContent({ data }: DashboardContentProps) {
             <JourneyProgress journey={data.journey} />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <NextMissionCard mission={data.next_mission} />
+            {nextBestAction ? (
+              <NextBestActionCard action={nextBestAction} />
+            ) : (
+              <NextMissionCard mission={data.next_mission} />
+            )}
           </motion.div>
           <motion.div variants={itemVariants}>
             <NextRewardCard reward={data.next_reward} />

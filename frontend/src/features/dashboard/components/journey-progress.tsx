@@ -83,17 +83,25 @@ export function JourneyProgress({ journey }: JourneyProgressProps) {
 
       <ol className="mt-6 flex flex-col gap-4">
         {journey.steps.map((step) => (
-          <li key={step.key} className="flex items-center gap-3">
-            <StepIndicator status={step.status} />
-            <span
-              className={cn(
-                "text-sm",
-                step.status === "pending" ? "text-muted-foreground" : "font-medium",
-              )}
-            >
-              {step.label}
-              <span className="sr-only"> ({STATUS_LABEL[step.status]})</span>
-            </span>
+          <li key={step.key} className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <StepIndicator status={step.status} />
+              <span
+                className={cn(
+                  "text-sm",
+                  step.status === "pending" ? "text-muted-foreground" : "font-medium",
+                )}
+              >
+                {step.label}
+                <span className="sr-only"> ({STATUS_LABEL[step.status]})</span>
+              </span>
+            </div>
+            {/* Só a etapa atual mostra o "por quê" — é a que responde à
+                pergunta que importa agora; expor a descrição de todas de
+                uma vez viraria ruído (§8: clareza, não excesso). */}
+            {step.status === "current" ? (
+              <p className="ml-9 text-xs text-muted-foreground">{step.description}</p>
+            ) : null}
           </li>
         ))}
       </ol>
