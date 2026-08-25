@@ -154,3 +154,28 @@ class SimuladoAnswerRepository:
         )
         rows = (await self._db.execute(stmt)).all()
         return [(row[0], int(row[1]), int(row[2])) for row in rows]
+
+    async def subject_breakdown_for_profile(
+        self, candidate_profile_id: uuid.UUID
+    ) -> list[tuple[SimuladoSubject, int, int]]:
+        """Acertos × total respondidas, por matéria, em todas as tentativas
+        **concluídas** do candidato — base da trilha de estudo (aponta a
+        matéria mais fraca no histórico inteiro, não só na última tentativa).
+        Tentativas não finalizadas ficam de fora (o candidato "recomeça" uma
+        tentativa abandonada, ver docstring de `SimuladoAttempt` — não faz
+        sentido pesar respostas de uma tentativa que ele nunca fechou).
+        """
+        correct = func.count().filter(SimuladoAnswer.is_correct.is_(True))
+        total = func.count()
+        stmt = (
+            select(SimuladoQuestion.subject, correct, total)
+            .join(SimuladoQuestion, SimuladoQuestion.id == SimuladoAnswer.question_id)
+            .join(SimuladoAttempt, SimuladoAttempt.id == SimuladoAnswer.attempt_id)
+            .where(
+                SimuladoAttempt.candidate_profile_id == candidate_profile_id,
+                SimuladoAttempt.finished_at.is_not(None),
+            )
+            .group_by(SimuladoQuestion.subject)
+        )
+        rows = (await self._db.execute(stmt)).all()
+        return [(row[0], int(row[1]), int(row[2])) for row in rows]

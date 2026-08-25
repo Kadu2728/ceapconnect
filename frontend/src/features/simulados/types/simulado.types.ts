@@ -42,6 +42,8 @@ export interface FinishAttemptResult {
   score_percentage: number;
   subject_breakdown: SubjectBreakdown[];
   xp_awarded: number;
+  /** Matéria com menor taxa de acerto nesta tentativa; `null` = sem dado suficiente. */
+  weakest_subject: SimuladoSubject | null;
 }
 
 export interface AttemptHistoryItem {
@@ -55,4 +57,6 @@ export interface AttemptHistoryItem {
 export interface AttemptHistory {
   attempts: AttemptHistoryItem[];
   best_score_percentage: number | null;
+  /** Matéria com menor taxa de acerto em todo o histórico; `null` = sem dado suficiente. */
+  weakest_subject: SimuladoSubject | null;
 }

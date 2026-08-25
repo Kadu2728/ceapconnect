@@ -1,15 +1,11 @@
 "use client";
 
-import { ArrowLeft, Award, Sparkles } from "lucide-react";
+import { ArrowLeft, Award, BookOpen, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { FinishAttemptResult } from "@/features/simulados/types/simulado.types";
-
-const SUBJECT_LABEL: Record<string, string> = {
-  portugues: "Português",
-  matematica: "Matemática",
-};
+import { SUBJECT_LABEL } from "@/features/simulados/utils/subject-label";
 
 interface SimuladoResultProps {
   result: FinishAttemptResult;
@@ -61,6 +57,19 @@ export function SimuladoResult({ result, onRestart }: SimuladoResultProps) {
           })}
         </div>
       </Card>
+
+      {result.weakest_subject ? (
+        <Card className="flex-row items-center gap-3 border-brand/30 bg-brand/[0.03] px-6 py-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+            <BookOpen className="size-5" aria-hidden="true" />
+          </span>
+          <p className="text-sm">
+            Sua trilha de estudo: capriche em{" "}
+            <span className="font-semibold">{SUBJECT_LABEL[result.weakest_subject]}</span>{" "}
+            no próximo simulado — foi onde você mais errou desta vez.
+          </p>
+        </Card>
+      ) : null}
 
       <Button variant="outline" onClick={onRestart}>
         <ArrowLeft className="size-4" aria-hidden="true" />

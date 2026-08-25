@@ -71,6 +71,9 @@ class FinishAttemptResponse(BaseModel):
     score_percentage: int
     subject_breakdown: list[SubjectBreakdown]
     xp_awarded: int
+    # Trilha de estudo: matéria com menor taxa de acerto nesta tentativa.
+    # `None` = matérias empatadas ou dado insuficiente para apontar uma.
+    weakest_subject: SimuladoSubject | None
 
 
 class AttemptHistoryItem(BaseModel):
@@ -88,3 +91,7 @@ class AttemptHistoryResponse(BaseModel):
 
     attempts: list[AttemptHistoryItem]
     best_score_percentage: int | None
+    # Trilha de estudo: matéria com menor taxa de acerto em todo o histórico
+    # de tentativas concluídas — não só a última. `None` = sem dado
+    # suficiente ainda (nenhuma tentativa concluída, ou matérias empatadas).
+    weakest_subject: SimuladoSubject | None

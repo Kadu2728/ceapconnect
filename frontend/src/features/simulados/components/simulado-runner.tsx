@@ -14,12 +14,8 @@ import type {
   FinishAttemptResult,
   SimuladoQuestion,
 } from "@/features/simulados/types/simulado.types";
+import { SUBJECT_LABEL } from "@/features/simulados/utils/subject-label";
 import { cn } from "@/lib/utils";
-
-const SUBJECT_LABEL: Record<string, string> = {
-  portugues: "Português",
-  matematica: "Matemática",
-};
 
 interface SimuladoRunnerProps {
   attemptId: string;

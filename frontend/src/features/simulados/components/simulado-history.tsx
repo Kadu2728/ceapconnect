@@ -1,10 +1,11 @@
 "use client";
 
-import { CalendarClock, PlayCircle, Trophy } from "lucide-react";
+import { BookOpen, CalendarClock, PlayCircle, Trophy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { AttemptHistory } from "@/features/simulados/types/simulado.types";
+import { SUBJECT_LABEL } from "@/features/simulados/utils/subject-label";
 import { cn } from "@/lib/utils";
 
 function formatDate(iso: string): string {
@@ -56,6 +57,19 @@ export function SimuladoHistory({ data, onStart, isStarting }: SimuladoHistoryPr
           na hora, em cada questão.
         </p>
       </Card>
+
+      {data.weakest_subject ? (
+        <Card className="flex-row items-center gap-3 border-brand/30 bg-brand/[0.03] px-6 py-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+            <BookOpen className="size-5" aria-hidden="true" />
+          </span>
+          <p className="text-sm">
+            Sua trilha de estudo: no geral, é em{" "}
+            <span className="font-semibold">{SUBJECT_LABEL[data.weakest_subject]}</span>{" "}
+            que você mais tem errado — vale focar aí no próximo simulado.
+          </p>
+        </Card>
+      ) : null}
 
       {data.attempts.length > 0 ? (
         <Card className="gap-3">

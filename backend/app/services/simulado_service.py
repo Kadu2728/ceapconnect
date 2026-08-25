@@ -17,6 +17,7 @@ from typing import Final
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
+from app.core.study_track_rules import resolve_weakest_subject
 from app.models.simulado import SUBJECT_MATEMATICA, SUBJECT_PORTUGUES
 from app.models.user import User
 from app.repositories.mission_repository import MissionProgressRepository
@@ -155,6 +156,7 @@ async def finish_attempt(
             for subject, correct, total in breakdown_rows
         ],
         xp_awarded=_XP_REWARD,
+        weakest_subject=resolve_weakest_subject(breakdown_rows),
     )
 
 
@@ -180,4 +182,10 @@ async def get_history(db: AsyncSession, user: User) -> AttemptHistoryResponse:
     ]
 
     best = max((item.score_percentage for item in items), default=None)
-    return AttemptHistoryResponse(attempts=items, best_score_percentage=best)
+
+    overall_breakdown = await SimuladoAnswerRepository(db).subject_breakdown_for_profile(profile.id)
+    return AttemptHistoryResponse(
+        attempts=items,
+        best_score_percentage=best,
+        weakest_subject=resolve_weakest_subject(overall_breakdown),
+    )
