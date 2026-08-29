@@ -11,9 +11,15 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import GuardianScope, get_guardian_scope
+from app.api.v1.deps import GuardianScope, get_current_guardian, get_guardian_scope
 from app.core.database import get_db
-from app.schemas.guardian_access import GuardianChildJourneyResponse, GuardianChildrenResponse
+from app.models.user import User
+from app.schemas.guardian_access import (
+    GuardianChildItem,
+    GuardianChildJourneyResponse,
+    GuardianChildrenResponse,
+    GuardianLinkChildRequest,
+)
 from app.schemas.response import ApiResponse
 from app.services import guardian_access_service
 
@@ -45,3 +51,17 @@ async def get_child_journey(
 ) -> ApiResponse[GuardianChildJourneyResponse]:
     data = await guardian_access_service.get_child_journey(db, scope, candidate_profile_id)
     return ApiResponse(success=True, message="Jornada recuperada com sucesso.", data=data)
+
+
+@router.post(
+    "/link-children",
+    response_model=ApiResponse[GuardianChildItem],
+    summary="Anexa mais um filho à conta já autenticada, por link mágico",
+)
+async def link_child(
+    payload: GuardianLinkChildRequest,
+    current_user: User = Depends(get_current_guardian),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[GuardianChildItem]:
+    data = await guardian_access_service.link_child(db, current_user, payload.token)
+    return ApiResponse(success=True, message="Filho vinculado com sucesso.", data=data)

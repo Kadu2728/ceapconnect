@@ -9,7 +9,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
+from app.models.user import ROLE_CANDIDATE, User, UserRole
 
 
 class UserRepository:
@@ -56,6 +56,7 @@ class UserRepository:
         cpf: str,
         phone: str,
         password_hash: str,
+        role: UserRole = ROLE_CANDIDATE,
     ) -> User:
         """Adiciona um novo usuário à sessão e faz `flush` (sem commit).
 
@@ -65,6 +66,10 @@ class UserRepository:
         (`app.services.auth_service.register_user`), garantindo atomicidade.
         O `flush` é necessário para que `user.id` (default Python-side) seja
         atribuído antes de ser usado como FK pelas entidades subsequentes.
+
+        `role` default `candidate` cobre o fluxo original; a ativação de
+        conta do responsável (RBAC do responsável) é o segundo chamador,
+        passando `role=ROLE_GUARDIAN` explicitamente.
         """
         user = User(
             name=name,
@@ -72,6 +77,7 @@ class UserRepository:
             cpf=cpf,
             phone=phone,
             password_hash=password_hash,
+            role=role,
         )
         self._db.add(user)
         await self._db.flush()

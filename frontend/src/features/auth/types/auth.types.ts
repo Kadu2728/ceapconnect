@@ -34,7 +34,7 @@ export interface LoginRequest {
   password: string;
 }
 
-export type UserRole = "candidate" | "coordinator" | "admin";
+export type UserRole = "candidate" | "coordinator" | "admin" | "guardian";
 
 export interface AuthUser {
   id: string;

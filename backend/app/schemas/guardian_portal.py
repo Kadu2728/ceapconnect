@@ -13,6 +13,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel
 
+from app.schemas.auth import RegisterRequest
+
 
 class GuardianPortalView(BaseModel):
     """O que o responsável vê na tela de confirmação."""
@@ -22,3 +24,14 @@ class GuardianPortalView(BaseModel):
     training_location: str
     training_confirmed_at: datetime | None
     training_attended_at: datetime | None
+    account_already_active: bool = False
+
+
+class GuardianAccountActivationRequest(RegisterRequest):
+    """Corpo de `POST /guardian-portal/{token}/activate`.
+
+    Mesmas regras de `RegisterRequest` (nome/e-mail/CPF/telefone/senha) —
+    reaproveitadas por herança em vez de duplicadas: o formato de uma conta
+    de responsável não é diferente do de uma conta de candidato, só o papel
+    (`role`) atribuído na criação é diferente.
+    """

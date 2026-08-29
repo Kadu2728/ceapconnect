@@ -1,10 +1,13 @@
 "use client";
 
 import { CheckCircle2, MapPin } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { AuthCard } from "@/features/auth/components/auth-card";
 import { formatFullDate } from "@/features/dashboard/utils/date";
+import { GuardianAccountActivationForm } from "@/features/guardian-portal/components/guardian-account-activation-form";
 import { useConfirmGuardianTraining } from "@/features/guardian-portal/hooks/use-confirm-guardian-training";
 import { useGuardianPortal } from "@/features/guardian-portal/hooks/use-guardian-portal";
 
@@ -21,6 +24,7 @@ interface GuardianPortalContentProps {
 export function GuardianPortalContent({ token }: GuardianPortalContentProps) {
   const portalQuery = useGuardianPortal(token);
   const confirmMutation = useConfirmGuardianTraining(token);
+  const [showActivationForm, setShowActivationForm] = useState(false);
 
   if (portalQuery.isPending) {
     return (
@@ -89,6 +93,41 @@ export function GuardianPortalContent({ token }: GuardianPortalContentProps) {
         <p className="text-center text-xs text-muted-foreground">
           Dúvidas? Entre em contato com a secretaria do CEAP.
         </p>
+      </div>
+
+      <div className="mt-6 border-t pt-6">
+        {data.account_already_active ? (
+          <div className="flex flex-col items-center gap-2 text-center">
+            <p className="text-sm text-muted-foreground">
+              Você já criou sua conta de responsável por este link.
+            </p>
+            <Link
+              href="/login"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Fazer login
+            </Link>
+          </div>
+        ) : showActivationForm ? (
+          <div className="flex flex-col gap-4">
+            <div className="text-center">
+              <h2 className="text-base font-semibold">Acompanhe pelo app</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Crie sua conta para ver a jornada de {data.candidate_first_name} sempre
+                que quiser — nunca o desempenho ou a nota, só o progresso.
+              </p>
+            </div>
+            <GuardianAccountActivationForm token={token} />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowActivationForm(true)}
+            className="w-full text-center text-sm font-medium text-primary hover:underline"
+          >
+            Quero acompanhar a jornada de {data.candidate_first_name} pelo app
+          </button>
+        )}
       </div>
     </AuthCard>
   );

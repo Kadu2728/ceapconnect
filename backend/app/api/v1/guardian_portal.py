@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.schemas.guardian_portal import GuardianPortalView
+from app.schemas.auth import TokenPairResponse
+from app.schemas.guardian_portal import GuardianAccountActivationRequest, GuardianPortalView
 from app.schemas.response import ApiResponse
 from app.services import guardian_portal_service
 
@@ -40,3 +41,17 @@ async def confirm_guardian_training(
 ) -> ApiResponse[GuardianPortalView]:
     data = await guardian_portal_service.confirm_training(db, token)
     return ApiResponse(success=True, message="Presença confirmada com sucesso.", data=data)
+
+
+@router.post(
+    "/{token}/activate",
+    response_model=ApiResponse[TokenPairResponse],
+    summary="Responsável cria sua conta de login a partir do link mágico",
+)
+async def activate_guardian_account(
+    token: str,
+    payload: GuardianAccountActivationRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[TokenPairResponse]:
+    data = await guardian_portal_service.activate_account(db, token, payload)
+    return ApiResponse(success=True, message="Conta criada com sucesso.", data=data)

@@ -13,9 +13,16 @@ do Dashboard do candidato (`app.schemas.dashboard`) porque já é
 
 from datetime import date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.dashboard import JourneyProgress
+
+
+class GuardianLinkChildRequest(BaseModel):
+    """Corpo de `POST /guardian/link-children` — responsável já logado
+    anexando mais um filho pelo link mágico (ex.: dois irmãos no CEAP)."""
+
+    token: str = Field(min_length=1)
 
 
 class GuardianChildItem(BaseModel):

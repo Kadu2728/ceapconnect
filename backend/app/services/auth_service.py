@@ -89,7 +89,7 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> Toke
 
     await db.commit()
 
-    return _issue_token_pair(user)
+    return issue_token_pair(user)
 
 
 async def refresh_access_token(db: AsyncSession, refresh_token: str) -> str:
@@ -119,7 +119,7 @@ async def get_current_user(db: AsyncSession, access_token: str) -> User:
     )
 
 
-def _issue_token_pair(user: User) -> TokenPairResponse:
+def issue_token_pair(user: User) -> TokenPairResponse:
     """Monta o par de tokens JWT (access + refresh) para o usuário informado."""
     return TokenPairResponse(
         access_token=create_access_token(str(user.id)),

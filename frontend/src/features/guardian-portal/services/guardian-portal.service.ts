@@ -1,6 +1,10 @@
 import { apiClient } from "@/lib/axios";
 
-import type { GuardianPortalView } from "@/features/guardian-portal/types/guardian-portal.types";
+import type { LoginResponseData } from "@/features/auth/types/auth.types";
+import type {
+  GuardianAccountActivationRequest,
+  GuardianPortalView,
+} from "@/features/guardian-portal/types/guardian-portal.types";
 import type { ApiEnvelope } from "@/types/api";
 
 /**
@@ -22,6 +26,17 @@ export async function confirmGuardianTraining(
 ): Promise<GuardianPortalView> {
   const { data } = await apiClient.post<ApiEnvelope<GuardianPortalView>>(
     `${GUARDIAN_PORTAL_ENDPOINT}/${token}/confirm`,
+  );
+  return data.data;
+}
+
+export async function activateGuardianAccount(
+  token: string,
+  payload: GuardianAccountActivationRequest,
+): Promise<LoginResponseData> {
+  const { data } = await apiClient.post<ApiEnvelope<LoginResponseData>>(
+    `${GUARDIAN_PORTAL_ENDPOINT}/${token}/activate`,
+    payload,
   );
   return data.data;
 }

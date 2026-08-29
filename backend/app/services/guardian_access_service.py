@@ -16,9 +16,14 @@ from app.core.config import settings
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.core.rbac import GuardianScope
 from app.models.candidate_document import REQUIRED_DOCUMENT_TYPES
+from app.models.candidate_profile import CandidateProfile
+from app.models.guardian_candidate_link import CONSENT_PENDING
+from app.models.journey_step import JourneyStep
+from app.models.user import User
 from app.repositories.candidate_document_repository import CandidateDocumentRepository
 from app.repositories.candidate_profile_repository import CandidateProfileRepository
 from app.repositories.cohort_repository import CohortRepository
+from app.repositories.guardian_candidate_link_repository import GuardianCandidateLinkRepository
 from app.repositories.guardian_repository import GuardianRepository
 from app.repositories.journey_step_repository import JourneyStepRepository
 from app.repositories.user_repository import UserRepository
@@ -48,21 +53,61 @@ async def list_children(db: AsyncSession, scope: GuardianScope) -> GuardianChild
         user = user_map.get(profile.user_id)
         if user is None:
             continue
-        journey = journey_service.build_journey_progress(steps, profile.current_journey_step_key)
-        current_step_label = next(
-            (s.label for s in journey.steps if s.key == journey.current_step_key),
-            journey.current_step_key,
-        )
-        items.append(
-            GuardianChildItem(
-                candidate_profile_id=str(profile.id),
-                name=user.name,
-                current_step_label=current_step_label,
-                journey_percentage=journey.percentage,
-            )
-        )
+        items.append(_build_child_item(profile, user, steps))
 
     return GuardianChildrenResponse(children=items)
+
+
+async def link_child(db: AsyncSession, guardian_user: User, token: str) -> GuardianChildItem:
+    """Anexa mais um filho à conta já autenticada do responsável (link mágico).
+
+    Distinto de `guardian_portal_service.activate_account` (que cria a
+    conta): aqui a conta já existe, o link só serve para autorizar mais um
+    candidato — o caso de dois irmãos no CEAP com o mesmo responsável.
+    Idempotente: se o vínculo já existe, devolve o item existente em vez de
+    tentar duplicar.
+    """
+    guardian = await GuardianRepository(db).get_by_confirmation_token(token)
+    if guardian is None:
+        raise NotFoundException("Link inválido ou expirado.")
+
+    link_repo = GuardianCandidateLinkRepository(db)
+    existing = await link_repo.get(
+        guardian_user_id=guardian_user.id, candidate_profile_id=guardian.candidate_profile_id
+    )
+    if existing is None:
+        await link_repo.create(
+            guardian_user_id=guardian_user.id,
+            candidate_profile_id=guardian.candidate_profile_id,
+            consent_status=CONSENT_PENDING,
+        )
+        await db.commit()
+
+    profile = await CandidateProfileRepository(db).get_by_id(guardian.candidate_profile_id)
+    if profile is None:
+        raise NotFoundException("Candidato não encontrado.")
+    child_user = await UserRepository(db).get_by_id(profile.user_id)
+    if child_user is None:
+        raise NotFoundException("Candidato não encontrado.")
+
+    steps = await JourneyStepRepository(db).list_ordered()
+    return _build_child_item(profile, child_user, steps)
+
+
+def _build_child_item(
+    profile: CandidateProfile, user: User, steps: list[JourneyStep]
+) -> GuardianChildItem:
+    journey = journey_service.build_journey_progress(steps, profile.current_journey_step_key)
+    current_step_label = next(
+        (s.label for s in journey.steps if s.key == journey.current_step_key),
+        journey.current_step_key,
+    )
+    return GuardianChildItem(
+        candidate_profile_id=str(profile.id),
+        name=user.name,
+        current_step_label=current_step_label,
+        journey_percentage=journey.percentage,
+    )
 
 
 async def get_child_journey(

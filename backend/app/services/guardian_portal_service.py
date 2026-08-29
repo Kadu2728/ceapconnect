@@ -18,13 +18,19 @@ from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.exceptions import NotFoundException
+from app.core.exceptions import ConflictException, NotFoundException
+from app.core.security import hash_password
 from app.models.guardian import Guardian
+from app.models.guardian_candidate_link import CONSENT_PENDING
+from app.models.user import ROLE_GUARDIAN
 from app.repositories.candidate_profile_repository import CandidateProfileRepository
 from app.repositories.cohort_repository import CohortRepository
+from app.repositories.guardian_candidate_link_repository import GuardianCandidateLinkRepository
 from app.repositories.guardian_repository import GuardianRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.guardian_portal import GuardianPortalView
+from app.schemas.auth import TokenPairResponse
+from app.schemas.guardian_portal import GuardianAccountActivationRequest, GuardianPortalView
+from app.services.auth_service import issue_token_pair
 
 
 async def get_portal_view(db: AsyncSession, token: str) -> GuardianPortalView:
@@ -45,6 +51,50 @@ async def confirm_training(db: AsyncSession, token: str) -> GuardianPortalView:
         guardian.training_confirmed_at = datetime.now(UTC)
         await db.commit()
     return await _build_view(db, guardian)
+
+
+async def activate_account(
+    db: AsyncSession, token: str, payload: GuardianAccountActivationRequest
+) -> TokenPairResponse:
+    """Cria a conta de login do responsável a partir do link mágico.
+
+    Cria SEMPRE uma conta nova — nunca reaproveita uma conta existente por
+    e-mail/senha submetidos aqui (fluxo público, sem verificação de posse da
+    conta antiga; reaproveitar seria uma porta de account takeover). Se o
+    e-mail/CPF já pertence a qualquer conta, ou se este link já foi usado
+    para ativar uma conta antes, a resposta é sempre 409 — o responsável que
+    já tem conta deve fazer login normalmente, não ativar de novo.
+    """
+    guardian = await _get_guardian_or_raise(db, token)
+    if guardian.activated_by_user_id is not None:
+        raise ConflictException(
+            "Este link já foi usado para criar uma conta. Faça login normalmente."
+        )
+
+    user_repo = UserRepository(db)
+    if await user_repo.get_by_email(payload.email) is not None:
+        raise ConflictException("Este e-mail já está cadastrado.")
+    if await user_repo.get_by_cpf(payload.cpf) is not None:
+        raise ConflictException("Este CPF já está cadastrado.")
+
+    user = await user_repo.create(
+        name=payload.name,
+        email=payload.email,
+        cpf=payload.cpf,
+        phone=payload.phone,
+        password_hash=hash_password(payload.password),
+        role=ROLE_GUARDIAN,
+    )
+
+    await GuardianCandidateLinkRepository(db).create(
+        guardian_user_id=user.id,
+        candidate_profile_id=guardian.candidate_profile_id,
+        consent_status=CONSENT_PENDING,
+    )
+    guardian.activated_by_user_id = user.id
+
+    await db.commit()
+    return issue_token_pair(user)
 
 
 async def _get_guardian_or_raise(db: AsyncSession, token: str) -> Guardian:
@@ -73,6 +123,7 @@ async def _build_view(db: AsyncSession, guardian: Guardian) -> GuardianPortalVie
         training_location=settings.interview_location,
         training_confirmed_at=guardian.training_confirmed_at,
         training_attended_at=guardian.training_attended_at,
+        account_already_active=guardian.activated_by_user_id is not None,
     )
 
 

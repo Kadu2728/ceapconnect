@@ -39,8 +39,8 @@ export function LoginForm() {
 
   const onSubmit = handleSubmit((values) => {
     loginMutation.mutate(values, {
-      onSuccess: () => {
-        router.push("/dashboard");
+      onSuccess: (data) => {
+        router.push(data.user.role === "guardian" ? "/area-responsavel" : "/dashboard");
       },
       onError: (error) => {
         setError("root", { message: error.message });

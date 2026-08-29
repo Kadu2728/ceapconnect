@@ -5,13 +5,17 @@ acessar um candidato ao qual não está vinculado deve falhar — sempre, mesmo
 que o candidato exista de verdade no banco.
 """
 
+import uuid
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ForbiddenException
+from app.core.exceptions import ForbiddenException, NotFoundException
 from app.core.rbac import GuardianScope
 from app.models.candidate_profile import CandidateProfile
+from app.models.guardian import Guardian
 from app.models.guardian_candidate_link import CONSENT_GRANTED, CONSENT_PENDING
+from app.models.journey_step import JourneyStep
 from app.models.user import User
 from app.repositories.guardian_candidate_link_repository import GuardianCandidateLinkRepository
 from app.services import guardian_access_service
@@ -96,3 +100,73 @@ async def test_listar_filhos_ignora_vinculo_nao_autorizado(
     result = await guardian_access_service.list_children(db_session, empty_scope)
 
     assert result.children == []
+
+
+async def _second_child_with_magic_link(db: AsyncSession, journey_step: JourneyStep) -> Guardian:
+    """Um segundo candidato (ex.: irmão) com seu próprio contato `Guardian`
+    (link mágico) — usado para testar `link_child` (anexar mais um filho a
+    uma conta de responsável já existente)."""
+    unique = uuid.uuid4().hex[:10]
+    user = User(
+        name="Segundo Filho de Teste",
+        email=f"filho2_{unique}@example.com",
+        cpf=unique.ljust(11, "6")[:11],
+        phone="11999990002",
+        password_hash="not-a-real-hash",
+    )
+    db.add(user)
+    await db.flush()
+
+    profile = CandidateProfile(user_id=user.id, current_journey_step_key=journey_step.key)
+    db.add(profile)
+    await db.flush()
+
+    guardian = Guardian(candidate_profile_id=profile.id, is_primary=True)
+    db.add(guardian)
+    await db.flush()
+    return guardian
+
+
+async def test_link_child_anexa_um_segundo_filho_pelo_link(
+    db_session: AsyncSession, guardian_user: User, journey_step: JourneyStep
+) -> None:
+    second_child_guardian = await _second_child_with_magic_link(db_session, journey_step)
+
+    item = await guardian_access_service.link_child(
+        db_session, guardian_user, second_child_guardian.confirmation_token
+    )
+
+    assert item.candidate_profile_id == str(second_child_guardian.candidate_profile_id)
+    authorized = await GuardianCandidateLinkRepository(db_session).list_authorized_candidate_ids(
+        guardian_user.id
+    )
+    assert second_child_guardian.candidate_profile_id in authorized
+
+
+async def test_link_child_e_idempotente(
+    db_session: AsyncSession, guardian_user: User, journey_step: JourneyStep
+) -> None:
+    second_child_guardian = await _second_child_with_magic_link(db_session, journey_step)
+
+    await guardian_access_service.link_child(
+        db_session, guardian_user, second_child_guardian.confirmation_token
+    )
+    # Chamar de novo com o mesmo link não deve levantar (UniqueConstraint) nem duplicar.
+    await guardian_access_service.link_child(
+        db_session, guardian_user, second_child_guardian.confirmation_token
+    )
+
+    links = await GuardianCandidateLinkRepository(db_session).list_for_guardian(guardian_user.id)
+    matching = [
+        link
+        for link in links
+        if link.candidate_profile_id == second_child_guardian.candidate_profile_id
+    ]
+    assert len(matching) == 1
+
+
+async def test_link_child_com_token_invalido_levanta_not_found(
+    db_session: AsyncSession, guardian_user: User
+) -> None:
+    with pytest.raises(NotFoundException):
+        await guardian_access_service.link_child(db_session, guardian_user, "token-invalido")

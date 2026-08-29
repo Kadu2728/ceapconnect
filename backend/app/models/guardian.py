@@ -98,6 +98,18 @@ class Guardian(Base, TimestampMixin):
     training_notice_sent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # RBAC do responsável — fase B (ativação de conta): marca que ESTE
+    # registro de contato já foi usado para criar uma conta de login
+    # (`User.role == "guardian"`). Torna a ativação idempotente (mesmo link
+    # clicado duas vezes não cria uma segunda conta) e permite ao portal
+    # público mostrar "faça login" em vez do formulário de cadastro depois
+    # da primeira ativação. `ondelete="SET NULL"`: se a conta de login for
+    # removida, o contato continua válido — só deixa de estar "ativado".
+    activated_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     def __repr__(self) -> str:
         return f"<Guardian id={self.id} candidate_profile_id={self.candidate_profile_id}>"
