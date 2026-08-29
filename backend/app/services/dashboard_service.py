@@ -15,7 +15,6 @@ from app.core.exceptions import NotFoundException
 from app.core.gamification import LevelProgress, resolve_level
 from app.models.achievement import Achievement
 from app.models.activity_event import EVENT_STEP_VIEWED
-from app.models.journey_step import JourneyStep
 from app.models.reward import Reward
 from app.models.reward_redemption import STATUS_CANCELLED
 from app.models.user import User
@@ -33,8 +32,6 @@ from app.repositories.reward_repository import (
 from app.schemas.dashboard import (
     DashboardResponse,
     GuardianStatus,
-    JourneyProgress,
-    JourneyStepItem,
     NextMission,
     NextReward,
     RecentAchievement,
@@ -66,7 +63,7 @@ async def get_dashboard(db: AsyncSession, user: User) -> DashboardResponse:
         await db.commit()
 
     steps = await JourneyStepRepository(db).list_ordered()
-    journey = _build_journey_progress(steps, profile.current_journey_step_key)
+    journey = journey_service.build_journey_progress(steps, profile.current_journey_step_key)
 
     next_mission_row = await MissionRepository(db).get_next_pending_for_profile(profile.id)
     next_mission = (
@@ -183,39 +180,6 @@ def _to_next_reward(reward: Reward, achievement: Achievement | None, *, status: 
         icon=reward.icon,
         status=status,  # type: ignore[arg-type]  # "available" | "locked"
         requirement_label=reward_service.reward_requirement_label(reward, achievement),
-    )
-
-
-def _build_journey_progress(steps: list[JourneyStep], current_step_key: str) -> JourneyProgress:
-    """Calcula o percentual de progresso e o status de cada etapa da jornada."""
-    total_steps = len(steps)
-    current_step = next((step for step in steps if step.key == current_step_key), None)
-
-    # Defensivo: se a etapa atual do candidato não estiver (mais) no
-    # catálogo, trata como 0% em vez de quebrar o Dashboard.
-    current_order = current_step.order if current_step is not None else 0
-    percentage = round((current_order / total_steps) * 100) if total_steps else 0
-
-    step_items = [
-        JourneyStepItem(
-            key=step.key,
-            label=step.label,
-            description=step.description,
-            status=(
-                "completed"
-                if step.order < current_order
-                else "current"
-                if step.order == current_order
-                else "pending"
-            ),
-        )
-        for step in steps
-    ]
-
-    return JourneyProgress(
-        percentage=percentage,
-        current_step_key=current_step_key,
-        steps=step_items,
     )
 
 

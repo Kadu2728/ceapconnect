@@ -18,6 +18,7 @@ from app.api.v1.candidate_state import router as candidate_state_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.documents import router as documents_router
 from app.api.v1.events import router as events_router
+from app.api.v1.guardian import router as guardian_router
 from app.api.v1.guardian_portal import router as guardian_portal_router
 from app.api.v1.health import router as health_router
 from app.api.v1.internal import router as internal_router
@@ -51,6 +52,7 @@ api_router.include_router(admin_risk_router)
 api_router.include_router(admin_funnel_router)
 api_router.include_router(admin_guardians_router)
 api_router.include_router(admin_journey_os_router)
+api_router.include_router(guardian_router)
 api_router.include_router(guardian_portal_router)
 api_router.include_router(internal_router)
 api_router.include_router(assistant_router)

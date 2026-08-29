@@ -48,3 +48,22 @@ class CohortScope:
             # Candidato sem coorte só é visível para admin.
             return False
         return cohort_id in (self.cohort_ids or [])
+
+
+@dataclass(frozen=True)
+class GuardianScope:
+    """Escopo de candidatos que um responsável autenticado pode enxergar.
+
+    Diferente de `CohortScope`, nunca é irrestrito — não existe "responsável
+    admin" que vê todo mundo. `candidate_profile_ids` é sempre uma lista
+    concreta (pode ser vazia: responsável sem nenhum vínculo autorizado
+    ainda, ex.: só tem vínculos `pending`). Resolvida por
+    `GuardianCandidateLinkRepository.list_authorized_candidate_ids` — já
+    filtrado por `consent_status`, nunca em memória.
+    """
+
+    user: User
+    candidate_profile_ids: list[uuid.UUID]
+
+    def allows(self, candidate_profile_id: uuid.UUID) -> bool:
+        return candidate_profile_id in self.candidate_profile_ids

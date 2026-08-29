@@ -33,13 +33,14 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import settings
 from app.core.database import engine
 from app.models.candidate_profile import CandidateProfile
 from app.models.journey_step import JourneyStep
-from app.models.user import User
+from app.models.user import ROLE_GUARDIAN, User
 
 _DEFAULT_STEP_KEY = "inscricao"
 # Timeout curto de propósito: só precisa bastar para um Postgres de verdade
@@ -68,7 +69,15 @@ async def db_session(_database_reachable: bool) -> AsyncGenerator[AsyncSession]:
     if not _database_reachable:
         pytest.skip(f"Banco de dados inalcançável ({settings.database_url!r}).")
 
-    connection = await engine.connect()
+    # `_database_reachable` só prova que uma conexão *anterior* funcionou —
+    # em redes instáveis (ex.: handshake SSL que falha depois do connect
+    # inicial, observado neste ambiente Windows/asyncpg), esta segunda
+    # tentativa pode falhar mesmo com o probe tendo passado. Mesmo
+    # tratamento: motivo de skip, nunca um ERROR de suíte.
+    try:
+        connection = await engine.connect()
+    except Exception as exc:  # noqa: BLE001 — motivo de skip, não falha de asserção
+        pytest.skip(f"Banco de dados inalcançável ({settings.database_url!r}): {exc}")
     outer_transaction = await connection.begin()
     session_factory = async_sessionmaker(
         bind=connection,
@@ -87,7 +96,21 @@ async def db_session(_database_reachable: bool) -> AsyncGenerator[AsyncSession]:
 
 @pytest_asyncio.fixture
 async def journey_step(db_session: AsyncSession) -> JourneyStep:
-    """A única etapa de catálogo necessária para criar um `CandidateProfile` válido."""
+    """A única etapa de catálogo necessária para criar um `CandidateProfile` válido.
+
+    Idempotente: contra um banco já semeado (o Neon compartilhado de
+    dev/produção — CI usa um Postgres efêmero e vazio), `key="inscricao"`
+    já existe de verdade. Reaproveita a linha existente em vez de tentar
+    inserir de novo (`UniqueViolationError`) — o catálogo de etapas é o
+    mesmo em qualquer banco, não há motivo para o teste ter a sua própria
+    cópia divergente.
+    """
+    existing = (
+        await db_session.execute(select(JourneyStep).where(JourneyStep.key == _DEFAULT_STEP_KEY))
+    ).scalar_one_or_none()
+    if existing is not None:
+        return existing
+
     step = JourneyStep(
         key=_DEFAULT_STEP_KEY,
         label="Inscrição",
@@ -119,3 +142,20 @@ async def candidate_profile(
     db_session.add(profile)
     await db_session.flush()
     return profile
+
+
+@pytest_asyncio.fixture
+async def guardian_user(db_session: AsyncSession) -> User:
+    """Uma conta de responsável mínima, válida, isolada por UUID único (RBAC do responsável)."""
+    unique = uuid.uuid4().hex[:10]
+    user = User(
+        name="Responsável de Teste",
+        email=f"guardian_{unique}@example.com",
+        cpf=unique.ljust(11, "1")[:11],
+        phone="11988887777",
+        password_hash="not-a-real-hash",
+        role=ROLE_GUARDIAN,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    return user

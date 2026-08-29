@@ -16,13 +16,19 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 from app.models.mixins import SoftDeleteMixin, TimestampMixin
 
-UserRole = Literal["candidate", "coordinator", "admin"]
+UserRole = Literal["candidate", "coordinator", "admin", "guardian"]
 
 ROLE_CANDIDATE: Final = "candidate"
 ROLE_COORDINATOR: Final = "coordinator"
 ROLE_ADMIN: Final = "admin"
+# Responsável com conta própria (RBAC do responsável) — distinto da entidade
+# `Guardian` (app.models.guardian), que é o registro de contato/jornada por
+# candidato e continua existindo do jeito que está. Este papel só marca
+# "este User pode logar como responsável"; o que ele enxerga é resolvido por
+# `guardian_candidate_link`, nunca pelo papel sozinho.
+ROLE_GUARDIAN: Final = "guardian"
 
-_VALID_ROLES: Final = (ROLE_CANDIDATE, ROLE_COORDINATOR, ROLE_ADMIN)
+_VALID_ROLES: Final = (ROLE_CANDIDATE, ROLE_COORDINATOR, ROLE_ADMIN, ROLE_GUARDIAN)
 
 
 class User(Base, TimestampMixin, SoftDeleteMixin):

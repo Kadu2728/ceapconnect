@@ -37,6 +37,16 @@ class CandidateProfileRepository:
         )
         return (await self._db.execute(stmt)).scalar_one_or_none()
 
+    async def get_by_ids(self, profile_ids: list[uuid.UUID]) -> list[CandidateProfile]:
+        """Busca vários perfis de uma vez (ativos, não deletados) — uma query para N ids."""
+        if not profile_ids:
+            return []
+        stmt = select(CandidateProfile).where(
+            CandidateProfile.id.in_(profile_ids),
+            CandidateProfile.deleted_at.is_(None),
+        )
+        return list((await self._db.execute(stmt)).scalars().all())
+
     async def list_active_candidates(self) -> list[CandidateProfile]:
         """Perfis de candidatos ativos (role=candidate, não deletados,
         `status=active`) — base do recálculo de risco (EPIC 14). Nunca inclui

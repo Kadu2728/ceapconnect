@@ -49,7 +49,12 @@ async def test_ctr_e_taxa_de_retomada_sao_calculadas_a_partir_dos_eventos(
 async def test_sem_nenhum_evento_as_taxas_sao_none(
     db_session: AsyncSession, candidate_profile: CandidateProfile
 ) -> None:
-    metrics = await journey_os_metrics_service.get_metrics(db_session, window_days=30)
+    # `window_days=0` -> `since = agora`: nenhum evento histórico real (o
+    # banco é compartilhado com dev/produção, não está vazio) cai numa
+    # janela que só inclui o futuro. Não criamos nenhum evento neste teste,
+    # então a contagem tem que ser zero independente do que já existe no
+    # banco.
+    metrics = await journey_os_metrics_service.get_metrics(db_session, window_days=0)
 
     assert metrics.nba_generated_count == 0
     assert metrics.nba_click_through_rate is None

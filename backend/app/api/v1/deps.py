@@ -19,17 +19,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import ForbiddenException, UnauthorizedException
-from app.core.rbac import CohortScope, is_admin
-from app.models.user import ROLE_COORDINATOR, User
+from app.core.rbac import CohortScope, GuardianScope, is_admin
+from app.models.user import ROLE_COORDINATOR, ROLE_GUARDIAN, User
 from app.repositories.cohort_repository import CohortRepository
+from app.repositories.guardian_candidate_link_repository import GuardianCandidateLinkRepository
 from app.services import auth_service
 
 __all__ = [
     "CohortScope",
+    "GuardianScope",
     "get_cohort_scope",
     "get_current_admin",
     "get_current_coordinator",
+    "get_current_guardian",
     "get_current_user",
+    "get_guardian_scope",
     "is_admin",
     "verify_internal_api_key",
 ]
@@ -87,6 +91,34 @@ async def get_cohort_scope(
 
     cohort_ids = await CohortRepository(db).list_cohort_ids_for_coordinator(current_user.id)
     return CohortScope(user=current_user, cohort_ids=cohort_ids)
+
+
+async def get_current_guardian(current_user: User = Depends(get_current_user)) -> User:
+    """Garante que o usuário autenticado é um responsável com conta própria.
+
+    Usar nas rotas do RBAC do responsável (`app/api/v1/guardian.py`) — nunca
+    confundir com `app.api.v1.guardian_portal`, que é público (link mágico,
+    sem conta).
+    """
+    if current_user.role != ROLE_GUARDIAN:
+        raise ForbiddenException("Acesso restrito a contas de responsável.")
+    return current_user
+
+
+async def get_guardian_scope(
+    current_user: User = Depends(get_current_guardian),
+    db: AsyncSession = Depends(get_db),
+) -> GuardianScope:
+    """Resolve o escopo relacional do responsável — nunca irrestrito.
+
+    Só entram os candidatos com vínculo autorizado (`consent_status` em
+    `AUTHORIZED_CONSENT_STATUSES`) — um vínculo `pending`/`revoked` nunca
+    aparece aqui, mesmo que exista a linha em `guardian_candidate_links`.
+    """
+    candidate_profile_ids = await GuardianCandidateLinkRepository(db).list_authorized_candidate_ids(
+        current_user.id
+    )
+    return GuardianScope(user=current_user, candidate_profile_ids=candidate_profile_ids)
 
 
 async def verify_internal_api_key(

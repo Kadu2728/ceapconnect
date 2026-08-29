@@ -38,6 +38,7 @@ from app.models.candidate_profile import STATUS_ACTIVE, CandidateProfile
 from app.models.journey_step import JourneyStep
 from app.repositories.candidate_document_repository import CandidateDocumentRepository
 from app.repositories.journey_step_repository import JourneyStepRepository
+from app.schemas.dashboard import JourneyProgress, JourneyStepItem
 from app.services import activity_event_service
 
 _REQUIRED_DOCUMENT_COUNT = len(REQUIRED_DOCUMENT_TYPES)
@@ -121,4 +122,43 @@ async def _emit_step_completed(
         candidate_profile_id=profile.id,
         name=EVENT_STEP_COMPLETED,
         props={"step_key": step.key},
+    )
+
+
+def build_journey_progress(steps: list[JourneyStep], current_step_key: str) -> JourneyProgress:
+    """Monta o progresso de jornada (percentual + status de cada etapa).
+
+    Compartilhado entre o Dashboard do candidato (`dashboard_service`) e a
+    visão do responsável (`guardian_access_service`) — as duas mostram a
+    mesma jornada, só com audiências diferentes; a lógica de "onde estou"
+    não deveria divergir entre elas.
+    """
+    total_steps = len(steps)
+    current_step = next((step for step in steps if step.key == current_step_key), None)
+
+    # Defensivo: se a etapa atual não estiver (mais) no catálogo, trata como
+    # 0% em vez de quebrar quem chama.
+    current_order = current_step.order if current_step is not None else 0
+    percentage = round((current_order / total_steps) * 100) if total_steps else 0
+
+    step_items = [
+        JourneyStepItem(
+            key=step.key,
+            label=step.label,
+            description=step.description,
+            status=(
+                "completed"
+                if step.order < current_order
+                else "current"
+                if step.order == current_order
+                else "pending"
+            ),
+        )
+        for step in steps
+    ]
+
+    return JourneyProgress(
+        percentage=percentage,
+        current_step_key=current_step_key,
+        steps=step_items,
     )
