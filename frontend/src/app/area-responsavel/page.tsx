@@ -46,6 +46,13 @@ export default function AreaResponsavelPage() {
         <CardListSkeleton count={2} />
       ) : childrenQuery.isSuccess ? (
         <div className="flex flex-col gap-6">
+          {childrenQuery.data.pending_consent_count > 0 ? (
+            <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+              {childrenQuery.data.pending_consent_count === 1
+                ? "1 vínculo aguardando autorização do candidato — peça para ele confirmar no perfil dele."
+                : `${childrenQuery.data.pending_consent_count} vínculos aguardando autorização do candidato — peça para eles confirmarem no perfil.`}
+            </div>
+          ) : null}
           <GuardianChildrenList items={childrenQuery.data.children} />
           <LinkGuardianChildForm />
         </div>

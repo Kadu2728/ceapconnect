@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 
+import { GuardianLinksConsentCard } from "@/features/profile/components/guardian-links-consent-card";
 import { GuardianNoticeCard } from "@/features/profile/components/guardian-notice-card";
 import { GuardianTrainingNoticeCard } from "@/features/profile/components/guardian-training-notice-card";
 import { ProfileEditForm } from "@/features/profile/components/profile-edit-form";
@@ -44,6 +45,9 @@ export function ProfileContent({ data }: ProfileContentProps) {
       </motion.div>
       <motion.div variants={itemVariants}>
         <GuardianNoticeCard profile={data} />
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <GuardianLinksConsentCard />
       </motion.div>
       <motion.div variants={itemVariants}>
         <ProfileEditForm profile={data} />

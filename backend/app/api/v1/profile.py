@@ -4,12 +4,15 @@ Rotas protegidas via `Depends(get_current_user)`. A regra de negócio vive em
 `app.services.profile_service` — o router apenas orquestra e envelopa.
 """
 
+import uuid
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_current_user
 from app.core.database import get_db
 from app.models.user import User
+from app.schemas.guardian_consent import GuardianLinkConsentItem, GuardianLinkConsentListResponse
 from app.schemas.profile import (
     GuardianEmailNoticeResult,
     GuardianTrainingEmailNoticeResult,
@@ -17,7 +20,7 @@ from app.schemas.profile import (
     ProfileUpdateRequest,
 )
 from app.schemas.response import ApiResponse
-from app.services import profile_service
+from app.services import guardian_consent_service, profile_service
 
 router = APIRouter(prefix="/profile", tags=["Perfil"])
 
@@ -78,3 +81,44 @@ async def notify_guardian_training(
     confirmação de presença (item 5 do backlog)."""
     data = await profile_service.notify_guardian_training_email(db, current_user)
     return ApiResponse(success=True, message=data.message, data=data)
+
+
+@router.get(
+    "/guardian-links",
+    response_model=ApiResponse[GuardianLinkConsentListResponse],
+    summary="Responsáveis que pediram vínculo com sua conta (RBAC do responsável — fase C)",
+)
+async def list_guardian_links(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[GuardianLinkConsentListResponse]:
+    data = await guardian_consent_service.list_links(db, current_user)
+    return ApiResponse(success=True, message="Vínculos recuperados com sucesso.", data=data)
+
+
+@router.post(
+    "/guardian-links/{link_id}/consent",
+    response_model=ApiResponse[GuardianLinkConsentItem],
+    summary="Autoriza um responsável a acompanhar sua jornada",
+)
+async def consent_guardian_link(
+    link_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[GuardianLinkConsentItem]:
+    data = await guardian_consent_service.grant_consent(db, current_user, link_id)
+    return ApiResponse(success=True, message="Vínculo autorizado com sucesso.", data=data)
+
+
+@router.post(
+    "/guardian-links/{link_id}/revoke",
+    response_model=ApiResponse[GuardianLinkConsentItem],
+    summary="Revoga o acesso de um responsável já autorizado",
+)
+async def revoke_guardian_link(
+    link_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[GuardianLinkConsentItem]:
+    data = await guardian_consent_service.revoke_consent(db, current_user, link_id)
+    return ApiResponse(success=True, message="Vínculo revogado com sucesso.", data=data)

@@ -38,9 +38,20 @@ _REQUIRED_DOCUMENT_COUNT = len(REQUIRED_DOCUMENT_TYPES)
 
 
 async def list_children(db: AsyncSession, scope: GuardianScope) -> GuardianChildrenResponse:
-    """Filhos vinculados e autorizados — nunca lê além de `scope.candidate_profile_ids`."""
+    """Filhos vinculados e autorizados — nunca lê dado de candidato além de
+    `scope.candidate_profile_ids`.
+
+    `pending_consent_count` (fase C) é a exceção deliberada: só a contagem
+    de vínculos ainda não autorizados, nunca a identidade do candidato —
+    sem isso, a lista some vazia sem explicação assim que o responsável
+    vincula um filho mas o candidato ainda não consentiu.
+    """
+    pending_count = await GuardianCandidateLinkRepository(db).count_pending_for_guardian(
+        scope.user.id
+    )
+
     if not scope.candidate_profile_ids:
-        return GuardianChildrenResponse(children=[])
+        return GuardianChildrenResponse(children=[], pending_consent_count=pending_count)
 
     profiles = await CandidateProfileRepository(db).get_by_ids(scope.candidate_profile_ids)
     user_map = {
@@ -55,7 +66,7 @@ async def list_children(db: AsyncSession, scope: GuardianScope) -> GuardianChild
             continue
         items.append(_build_child_item(profile, user, steps))
 
-    return GuardianChildrenResponse(children=items)
+    return GuardianChildrenResponse(children=items, pending_consent_count=pending_count)
 
 
 async def link_child(db: AsyncSession, guardian_user: User, token: str) -> GuardianChildItem:

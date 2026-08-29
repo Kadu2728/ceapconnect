@@ -102,6 +102,21 @@ async def test_listar_filhos_ignora_vinculo_nao_autorizado(
     assert result.children == []
 
 
+async def test_listar_filhos_conta_pendentes_sem_revelar_identidade(
+    db_session: AsyncSession, guardian_user: User, candidate_profile: CandidateProfile
+) -> None:
+    """Fase C: um vínculo `pending` não aparece na lista (nenhum dado do
+    candidato vaza antes do consentimento), mas soma em `pending_consent_count`
+    — é o que explica pro responsável por que a lista está vazia."""
+    await _link(db_session, guardian_user, candidate_profile, status=CONSENT_PENDING)
+    empty_scope = GuardianScope(user=guardian_user, candidate_profile_ids=[])
+
+    result = await guardian_access_service.list_children(db_session, empty_scope)
+
+    assert result.children == []
+    assert result.pending_consent_count == 1
+
+
 async def _second_child_with_magic_link(db: AsyncSession, journey_step: JourneyStep) -> Guardian:
     """Um segundo candidato (ex.: irmão) com seu próprio contato `Guardian`
     (link mágico) — usado para testar `link_child` (anexar mais um filho a
@@ -137,10 +152,20 @@ async def test_link_child_anexa_um_segundo_filho_pelo_link(
     )
 
     assert item.candidate_profile_id == str(second_child_guardian.candidate_profile_id)
+    # O vínculo nasce `pending` (mesma regra da ativação de conta, fase A/C)
+    # — o responsável colar o link não autoriza sozinho, só o candidato
+    # consentindo (`guardian_consent_service.grant_consent`) move o vínculo
+    # para o escopo autorizado do responsável.
+    link = await GuardianCandidateLinkRepository(db_session).get(
+        guardian_user_id=guardian_user.id,
+        candidate_profile_id=second_child_guardian.candidate_profile_id,
+    )
+    assert link is not None
+    assert link.consent_status == CONSENT_PENDING
     authorized = await GuardianCandidateLinkRepository(db_session).list_authorized_candidate_ids(
         guardian_user.id
     )
-    assert second_child_guardian.candidate_profile_id in authorized
+    assert second_child_guardian.candidate_profile_id not in authorized
 
 
 async def test_link_child_e_idempotente(

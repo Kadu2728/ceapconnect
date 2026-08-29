@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/axios";
 
 import type {
   GuardianEmailNoticeResult,
+  GuardianLinkConsentItem,
+  GuardianLinkConsentListResponse,
   GuardianTrainingEmailNoticeResult,
   Profile,
   ProfileUpdateInput,
@@ -34,6 +36,31 @@ export async function notifyGuardianByEmail(): Promise<GuardianEmailNoticeResult
 export async function notifyGuardianTrainingByEmail(): Promise<GuardianTrainingEmailNoticeResult> {
   const { data } = await apiClient.post<ApiEnvelope<GuardianTrainingEmailNoticeResult>>(
     `${PROFILE_ENDPOINT}/guardian/notify-training`,
+  );
+  return data.data;
+}
+
+export async function fetchGuardianLinks(): Promise<GuardianLinkConsentListResponse> {
+  const { data } = await apiClient.get<ApiEnvelope<GuardianLinkConsentListResponse>>(
+    `${PROFILE_ENDPOINT}/guardian-links`,
+  );
+  return data.data;
+}
+
+export async function consentGuardianLink(
+  linkId: string,
+): Promise<GuardianLinkConsentItem> {
+  const { data } = await apiClient.post<ApiEnvelope<GuardianLinkConsentItem>>(
+    `${PROFILE_ENDPOINT}/guardian-links/${linkId}/consent`,
+  );
+  return data.data;
+}
+
+export async function revokeGuardianLink(
+  linkId: string,
+): Promise<GuardianLinkConsentItem> {
+  const { data } = await apiClient.post<ApiEnvelope<GuardianLinkConsentItem>>(
+    `${PROFILE_ENDPOINT}/guardian-links/${linkId}/revoke`,
   );
   return data.data;
 }

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictException, NotFoundException
 from app.models.candidate_profile import CandidateProfile
 from app.models.guardian import Guardian
+from app.models.guardian_candidate_link import CONSENT_PENDING
 from app.models.user import ROLE_GUARDIAN
 from app.repositories.guardian_candidate_link_repository import GuardianCandidateLinkRepository
 from app.repositories.user_repository import UserRepository
@@ -117,10 +118,17 @@ async def test_ativar_conta_cria_usuario_responsavel_e_vinculo(
     assert created_user is not None
     assert created_user.role == ROLE_GUARDIAN
 
+    # O vínculo nasce `pending` (fase C: só o candidato consentindo move
+    # para o escopo autorizado, a ativação da conta sozinha não basta).
+    link = await GuardianCandidateLinkRepository(db_session).get(
+        guardian_user_id=created_user.id, candidate_profile_id=candidate_profile.id
+    )
+    assert link is not None
+    assert link.consent_status == CONSENT_PENDING
     authorized = await GuardianCandidateLinkRepository(db_session).list_authorized_candidate_ids(
         created_user.id
     )
-    assert candidate_profile.id in authorized
+    assert candidate_profile.id not in authorized
 
     view = await guardian_portal_service.get_portal_view(db_session, guardian.confirmation_token)
     assert view.account_already_active is True

@@ -16,6 +16,8 @@ export interface GuardianChildItem {
 
 export interface GuardianChildrenResponse {
   children: GuardianChildItem[];
+  /** Vínculos ainda aguardando o candidato consentir — nunca revela identidade (fase C). */
+  pending_consent_count: number;
 }
 
 export interface GuardianChildJourneyResponse {

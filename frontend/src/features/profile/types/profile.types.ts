@@ -56,3 +56,23 @@ export interface GuardianTrainingEmailNoticeResult {
   message: string;
   guardian_training_notified_at: string | null;
 }
+
+/**
+ * Consentimento do candidato ao vínculo do responsável (RBAC do responsável
+ * — fase C). `not_required` existe no backend para o dia em que houver
+ * coleta de maioridade, mas nunca é atribuído hoje — todo vínculo nasce
+ * `pending` e só o candidato move para `granted`/`revoked`.
+ */
+export type GuardianConsentStatus = "not_required" | "pending" | "granted" | "revoked";
+
+export interface GuardianLinkConsentItem {
+  id: string;
+  guardian_name: string;
+  guardian_email: string;
+  consent_status: GuardianConsentStatus;
+  created_at: string;
+}
+
+export interface GuardianLinkConsentListResponse {
+  links: GuardianLinkConsentItem[];
+}

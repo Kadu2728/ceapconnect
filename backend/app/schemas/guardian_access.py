@@ -36,6 +36,11 @@ class GuardianChildItem(BaseModel):
 
 class GuardianChildrenResponse(BaseModel):
     children: list[GuardianChildItem]
+    # Vínculos ainda `pending` (RBAC do responsável — fase C): só a
+    # contagem, nunca a identidade do candidato — expor nome/jornada antes
+    # do consentimento seria o mesmo vazamento de privacidade que a fase C
+    # existe para fechar.
+    pending_consent_count: int = 0
 
 
 class GuardianChildJourneyResponse(BaseModel):
