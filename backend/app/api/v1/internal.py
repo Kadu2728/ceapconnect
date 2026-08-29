@@ -10,12 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import verify_internal_api_key
 from app.core.database import get_db
+from app.core.exceptions import BadRequestException
 from app.core.seed import seed as run_seed
+from app.schemas.candidate_reset import CandidateResetRequest, CandidateResetSummary
 from app.schemas.reminder import ReminderCheckSummary
 from app.schemas.response import ApiResponse
 from app.schemas.risk import RecomputeSummary
 from app.schemas.seed import SeedSummary
-from app.services import reminder_service, risk_service
+from app.services import candidate_reset_service, reminder_service, risk_service
 
 router = APIRouter(prefix="/internal", tags=["Interno"])
 
@@ -70,3 +72,29 @@ async def trigger_seed() -> ApiResponse[SeedSummary]:
         simulado_questions_created=result.simulado_questions_created,
     )
     return ApiResponse(success=True, message="Seed concluído.", data=data)
+
+
+@router.post(
+    "/candidates/reset",
+    response_model=ApiResponse[CandidateResetSummary],
+    summary="Reseta uma conta de candidato de teste para o estado de recém-cadastrado",
+    dependencies=[Depends(verify_internal_api_key)],
+)
+async def reset_candidate(
+    payload: CandidateResetRequest, db: AsyncSession = Depends(get_db)
+) -> ApiResponse[CandidateResetSummary]:
+    """Apaga progresso/jornada/gamificação de uma conta de teste e recria do
+    zero (mesmo estado de um cadastro novo) — usado antes de demonstrações.
+
+    Irreversível (DELETE real em cascata): exige `confirm: true` no corpo.
+    """
+    if not payload.confirm:
+        raise BadRequestException(
+            "Confirme explicitamente (`confirm: true`) para prosseguir — ação irreversível."
+        )
+    data = await candidate_reset_service.reset_candidate_to_zero(
+        db, payload.email, also_remove_guardian_emails=payload.also_remove_guardian_emails
+    )
+    return ApiResponse(
+        success=True, message="Conta resetada para o estado de recém-cadastrado.", data=data
+    )
