@@ -28,6 +28,13 @@ export interface RiskQueueItem {
    * Nunca traz o motivo da pausa — ele só existe em agregado.
    */
   paused_until: string | null;
+  /**
+   * Radar de Silêncio: quando o candidato **cruzou** para o silêncio.
+   * `null` = sem sinal em aberto. Complementa o "Sem atividade há N dia(s)"
+   * de `explanation` (estado atual) com a data da travessia — é o que
+   * distingue "sumiu ontem" de "sumiu há três semanas".
+   */
+  silence_detected_at: string | null;
 }
 
 export interface RiskQueueResponse {
@@ -35,6 +42,8 @@ export interface RiskQueueResponse {
   total: number;
   counts_by_tier: Record<RiskTier, number>;
   paused_count: number;
+  /** Travessias para o silêncio nos últimos 7 dias. */
+  new_silence_count: number;
 }
 
 export interface ActivityTimelineItem {

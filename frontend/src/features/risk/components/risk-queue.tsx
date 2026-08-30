@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { CheckCircle2, ChevronRight, PauseCircle, Users } from "lucide-react";
+import { CheckCircle2, ChevronRight, EyeOff, PauseCircle, Users } from "lucide-react";
 import { useState } from "react";
 
 import { CardListSkeleton } from "@/components/feedback/card-list-skeleton";
@@ -58,6 +58,7 @@ export function RiskQueue({ onSelectCandidate }: RiskQueueProps) {
     total,
     counts_by_tier: countsByTier,
     paused_count: pausedCount,
+    new_silence_count: newSilenceCount,
   } = query.data;
 
   return (
@@ -101,6 +102,20 @@ export function RiskQueue({ onSelectCandidate }: RiskQueueProps) {
             })}
           </div>
         </div>
+
+        {newSilenceCount > 0 ? (
+          <p className="flex items-start gap-2 px-6 text-sm text-muted-foreground">
+            <EyeOff className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+            <span>
+              <span className="font-medium text-foreground">
+                {newSilenceCount}{" "}
+                {newSilenceCount === 1 ? "candidato entrou" : "candidatos entraram"} em
+                silêncio nos últimos 7 dias
+              </span>{" "}
+              — sem avisar. É a janela em que a abordagem ainda muda o desfecho.
+            </span>
+          </p>
+        ) : null}
 
         {pausedCount > 0 ? (
           <p className="flex items-start gap-2 px-6 text-sm text-muted-foreground">
@@ -195,6 +210,14 @@ function QueueRow({ item, onClick }: { item: RiskQueueItem; onClick: () => void 
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
               <PauseCircle className="size-3" aria-hidden="true" />
               Pausou até {formatFullDate(item.paused_until)}
+            </span>
+          ) : item.silence_detected_at ? (
+            // Excludente da pausa de propósito: os dois badges juntos seriam
+            // contraditórios ("avisou" e "sumiu"), e o Radar já não abre
+            // sinal para quem pausou — este ramo é defesa em profundidade.
+            <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+              <EyeOff className="size-3" aria-hidden="true" />
+              Em silêncio desde {formatFullDate(item.silence_detected_at)}
             </span>
           ) : null}
         </div>

@@ -36,6 +36,7 @@ from app.repositories.candidate_profile_repository import CandidateProfileReposi
 from app.repositories.cohort_repository import CohortRepository
 from app.repositories.intervention_repository import InterventionRepository
 from app.repositories.risk_score_repository import RiskScoreRepository
+from app.repositories.silence_signal_repository import SilenceSignalRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.risk import (
     ActivityTimelineItem,
@@ -47,11 +48,15 @@ from app.schemas.risk import (
     RiskQueueItem,
     RiskQueueResponse,
 )
-from app.services import journey_service
+from app.services import journey_service, silence_radar_service
 from app.services.risk_feature_service import derive_features_for_group
 
 _RECENT_ACTIVITY_LIMIT = 20
 _MEASUREMENT_DELAY_DAYS = 7
+# Janela de "entrou em silêncio recentemente" mostrada no Console. Uma semana
+# é o horizonte em que a abordagem ainda muda o desfecho — mais que isso e o
+# abandono já se consolidou (é a mesma lógica do limiar de silêncio em si).
+_NEW_SILENCE_WINDOW_DAYS = 7
 
 # Instância padrão do scorer heurístico. `recompute_all` aceita um `scorer`
 # alternativo via parâmetro — é o ponto de troca para um modelo treinado no
@@ -78,12 +83,21 @@ async def recompute_all(db: AsyncSession, *, scorer: RiskScorer | None = None) -
 
     score_repo = RiskScoreRepository(db)
     processed = 0
+    silence_signals_opened = 0
     for group in groups.values():
         # Recomputa a etapa da jornada antes de derivar as features — pega
         # avanços de candidatos inativos (ex.: exam_date chegou) que nunca
         # abriram o Dashboard para disparar o sync por lá (ver journey_service).
         await journey_service.sync_group(db, group)
         features_list = await derive_features_for_group(db, group)
+
+        # Radar de Silêncio: reaproveita as features já derivadas acima —
+        # detectar a travessia para o silêncio não custa nenhuma query de
+        # comportamento nova, e roda na mesma cadência do score porque
+        # responde à mesma pergunta ("esta pessoa sumiu?"), só que como
+        # evento em vez de estado.
+        silence_signals_opened += await silence_radar_service.sync_signals(db, features_list)
+
         for features in features_list:
             result = active_scorer.score(features)
             factors_payload = [
@@ -120,6 +134,7 @@ async def recompute_all(db: AsyncSession, *, scorer: RiskScorer | None = None) -
         candidates_processed=processed,
         interventions_measured=measured,
         duration_seconds=duration,
+        silence_signals_opened=silence_signals_opened,
     )
 
 
@@ -150,19 +165,26 @@ async def get_queue(
             explanation=risk.explanation,
             computed_at=risk.computed_at,
             paused_until=pause.ends_at if pause is not None else None,
+            silence_detected_at=silence.detected_at if silence is not None else None,
         )
-        for risk, _profile, user, cohort, pause in rows
+        for risk, _profile, user, cohort, pause, silence in rows
     ]
 
     counts_by_tier = {"baixo": 0, "medio": 0, "alto": 0}
     for item in items:
         counts_by_tier[item.tier] += 1
 
+    new_silence_since = datetime.now(UTC) - timedelta(days=_NEW_SILENCE_WINDOW_DAYS)
+    new_silence_count = await SilenceSignalRepository(db).count_detected_since(
+        since=new_silence_since
+    )
+
     return RiskQueueResponse(
         items=items,
         total=len(items),
         counts_by_tier=counts_by_tier,
         paused_count=sum(1 for item in items if item.paused_until is not None),
+        new_silence_count=new_silence_count,
     )
 
 

@@ -44,7 +44,13 @@ STATE_VERSION: Final = "v1"
 # Dias de inatividade a partir dos quais o candidato é considerado parado —
 # o sinal mais forte e menos ambíguo que existe (ninguém interpreta mal
 # "sumiu há uma semana").
-_STALLED_INACTIVITY_DAYS: Final = 7.0
+#
+# Público (sem `_`) porque o Radar de Silêncio usa exatamente este limiar
+# (`app.services.silence_radar_service`). São a mesma pergunta — "esta pessoa
+# sumiu?" — e ter dois números para ela abriria a divergência que o cabeçalho
+# deste módulo existe para evitar: o Console dizendo que alguém entrou em
+# silêncio enquanto a experiência do candidato ainda o trata como ativo.
+STALLED_INACTIVITY_DAYS: Final = 7.0
 # Dias de inatividade que já configuram fricção, mesmo sem outro sinal.
 _FRICTION_INACTIVITY_DAYS: Final = 3.0
 # Janela de retorno: atividade dentro desse número de dias conta como
@@ -66,7 +72,7 @@ def classify_momentum(features: CandidateRiskFeatures) -> CandidateMomentum:
         features.is_stuck_on_blocking_step or features.missions_abandoned_count >= 1
     )
 
-    if features.days_since_last_activity >= _STALLED_INACTIVITY_DAYS:
+    if features.days_since_last_activity >= STALLED_INACTIVITY_DAYS:
         return MOMENTUM_STALLED
 
     if features.days_since_last_activity <= _RECOVERY_WINDOW_DAYS and has_friction_markers:

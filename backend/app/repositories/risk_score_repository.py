@@ -19,6 +19,7 @@ from app.models.cohort import Cohort
 from app.models.journey_pause import PAUSE_ACTIVE, JourneyPause
 from app.models.risk_score import RiskScore
 from app.models.risk_score_history import RiskScoreHistory
+from app.models.silence_signal import SilenceSignal
 from app.models.user import User
 
 
@@ -98,7 +99,16 @@ class RiskScoreRepository:
         cohort_ids: list[uuid.UUID] | None,
         tier: RiskTier | None = None,
         cohort_id_filter: uuid.UUID | None = None,
-    ) -> list[tuple[RiskScore, CandidateProfile, User, Cohort | None, JourneyPause | None]]:
+    ) -> list[
+        tuple[
+            RiskScore,
+            CandidateProfile,
+            User,
+            Cohort | None,
+            JourneyPause | None,
+            SilenceSignal | None,
+        ]
+    ]:
         """Fila de risco, mais arriscado primeiro — já filtrada pelo escopo do RBAC.
 
         `cohort_ids=None` = irrestrito (admin). Uma lista (mesmo vazia) restringe
@@ -118,7 +128,7 @@ class RiskScoreRepository:
 
         now = datetime.now(UTC)
         stmt = (
-            select(RiskScore, CandidateProfile, User, Cohort, JourneyPause)
+            select(RiskScore, CandidateProfile, User, Cohort, JourneyPause, SilenceSignal)
             .join(CandidateProfile, CandidateProfile.id == RiskScore.candidate_profile_id)
             .join(User, User.id == CandidateProfile.user_id)
             .outerjoin(Cohort, Cohort.id == CandidateProfile.cohort_id)
@@ -128,6 +138,15 @@ class RiskScoreRepository:
                     JourneyPause.candidate_profile_id == CandidateProfile.id,
                     JourneyPause.status == PAUSE_ACTIVE,
                     JourneyPause.ends_at > now,
+                ),
+            )
+            # Sinal de silêncio em aberto (Radar). No máximo um por candidato
+            # pelo índice único parcial, então não multiplica linhas.
+            .outerjoin(
+                SilenceSignal,
+                and_(
+                    SilenceSignal.candidate_profile_id == CandidateProfile.id,
+                    SilenceSignal.returned_at.is_(None),
                 ),
             )
             .where(CandidateProfile.status == STATUS_ACTIVE)
@@ -141,4 +160,4 @@ class RiskScoreRepository:
             stmt = stmt.where(RiskScore.tier == tier)
 
         result = await self._db.execute(stmt)
-        return [(row[0], row[1], row[2], row[3], row[4]) for row in result.all()]
+        return [(row[0], row[1], row[2], row[3], row[4], row[5]) for row in result.all()]

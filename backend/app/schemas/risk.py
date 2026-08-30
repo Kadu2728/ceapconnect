@@ -53,6 +53,12 @@ class RiskQueueItem(BaseModel):
     # ao lado do nome de um menor convida julgamento sobre a vida dele. O
     # motivo só existe em agregado, nunca individualizado aqui.
     paused_until: datetime | None = None
+    # Radar de Silêncio: quando o candidato **cruzou** para o silêncio.
+    # `None` = sem sinal em aberto. Complementa (não substitui) o
+    # "Sem atividade há N dia(s)" que já vem em `explanation`: aquilo é o
+    # estado atual, isto é a data da travessia — é o que permite ao
+    # coordenador distinguir "sumiu ontem" de "sumiu há três semanas".
+    silence_detected_at: datetime | None = None
 
 
 class RiskQueueResponse(BaseModel):
@@ -64,6 +70,9 @@ class RiskQueueResponse(BaseModel):
     #: Quantos da fila estão em pausa declarada — o coordenador vê de cara
     #: quanto da sua fila é "espera combinada", não fogo para apagar.
     paused_count: int = 0
+    #: Travessias para o silêncio nos últimos 7 dias — a pergunta que a fila
+    #: ordenada por score não responde ("quem sumiu *esta semana*?").
+    new_silence_count: int = 0
 
 
 class ActivityTimelineItem(BaseModel):
@@ -145,3 +154,5 @@ class RecomputeSummary(BaseModel):
     candidates_processed: int
     interventions_measured: int
     duration_seconds: float
+    #: Travessias para o silêncio detectadas nesta passada (Radar de Silêncio).
+    silence_signals_opened: int = 0
