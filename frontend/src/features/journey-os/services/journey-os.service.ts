@@ -4,6 +4,9 @@ import type {
   CandidateState,
   CandidateTrackableEvent,
   NextBestAction,
+  PauseResumeResult,
+  PauseStartRequest,
+  PauseState,
 } from "@/features/journey-os/types/journey-os.types";
 import type { ApiEnvelope } from "@/types/api";
 
@@ -13,6 +16,7 @@ import type { ApiEnvelope } from "@/types/api";
  */
 const CANDIDATE_STATE_ENDPOINT = "/api/v1/candidate-state";
 const NEXT_BEST_ACTION_ENDPOINT = "/api/v1/next-best-action";
+const PAUSE_ENDPOINT = "/api/v1/candidate/pause";
 
 export async function fetchCandidateState(): Promise<CandidateState> {
   const { data } = await apiClient.get<ApiEnvelope<CandidateState>>(
@@ -33,6 +37,18 @@ export async function fetchNextBestAction(): Promise<NextBestAction | null> {
  * (`activity_event_service`): nunca deve travar nem exibir erro ao
  * candidato se falhar. Quem chama não deve reagir à rejeição desta promise.
  */
+export async function startPause(payload: PauseStartRequest): Promise<PauseState> {
+  const { data } = await apiClient.post<ApiEnvelope<PauseState>>(PAUSE_ENDPOINT, payload);
+  return data.data;
+}
+
+export async function resumePause(): Promise<PauseResumeResult> {
+  const { data } = await apiClient.post<ApiEnvelope<PauseResumeResult>>(
+    `${PAUSE_ENDPOINT}/resume`,
+  );
+  return data.data;
+}
+
 export async function trackCandidateEvent(
   name: CandidateTrackableEvent,
   props: Record<string, unknown> = {},

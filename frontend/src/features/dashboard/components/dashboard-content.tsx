@@ -16,6 +16,8 @@ import { XpBadge } from "@/features/dashboard/components/xp-badge";
 import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
 import { getDaysUntil } from "@/features/dashboard/utils/date";
 import { NextBestActionCard } from "@/features/journey-os/components/next-best-action-card";
+import { PauseControl } from "@/features/journey-os/components/pause-control";
+import { PausedJourneyCard } from "@/features/journey-os/components/paused-journey-card";
 import { RecoveryModeCard } from "@/features/journey-os/components/recovery-mode-card";
 import { useCandidateState } from "@/features/journey-os/hooks/use-candidate-state";
 import { useNextBestAction } from "@/features/journey-os/hooks/use-next-best-action";
@@ -53,17 +55,48 @@ export function DashboardContent({ data }: DashboardContentProps) {
   const nextBestActionQuery = useNextBestAction();
   const nextBestAction = nextBestActionQuery.data ?? null;
 
+  // Pausa declarada tem precedência sobre tudo ("Jornada que Respira"): quem
+  // avisou que a vida apertou não pode cair no Modo Resgate, que é desenhado
+  // justamente para quem sumiu sem avisar.
+  const activePause = candidateStateQuery.data?.pause ?? null;
+
   // Modo Resgate (N4): só troca a experiência inteira quando o momentum
   // pede *e* existe uma ação concreta a mostrar — sem uma ação real, não
   // há nada para "reduzir a interface" em torno, então a jornada completa
   // continua sendo a melhor tela disponível.
   const isRecoveryMode =
+    activePause === null &&
     STALLED_MOMENTUMS.has(candidateStateQuery.data?.momentum ?? "") &&
     nextBestAction !== null;
 
   const daysToExam = data.exam_date ? getDaysUntil(data.exam_date) : null;
   const showExamLogistics =
     daysToExam !== null && daysToExam >= 0 && daysToExam <= EXAM_LOGISTICS_WINDOW_DAYS;
+
+  if (activePause !== null) {
+    return (
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="flex flex-col gap-6"
+      >
+        <motion.div variants={itemVariants}>
+          <PausedJourneyCard pause={activePause} greetingName={data.greeting_name} />
+        </motion.div>
+
+        {/* Mesma regra aplicada aos lembretes no backend: a pausa suspende a
+            cobrança de avanço, nunca a informação de data marcada. Uma prova
+            pode ser remarcada para dentro da janela da pausa — esconder isso
+            faria a pausa custar a vaga. */}
+        {showExamLogistics ? (
+          <motion.div variants={itemVariants}>
+            <ExamCountdown examDate={data.exam_date} />
+          </motion.div>
+        ) : null}
+      </motion.div>
+    );
+  }
 
   if (isRecoveryMode && nextBestAction) {
     const currentStep = data.journey.steps.find(
@@ -145,6 +178,12 @@ export function DashboardContent({ data }: DashboardContentProps) {
 
       <motion.div variants={itemVariants}>
         <GuardianStatusCard status={data.guardian_status} />
+      </motion.div>
+
+      {/* Último elemento da tela, peso visual mínimo: a pausa precisa existir
+          como saída honesta, mas nunca competir com o próximo passo. */}
+      <motion.div variants={itemVariants}>
+        <PauseControl />
       </motion.div>
     </motion.div>
   );

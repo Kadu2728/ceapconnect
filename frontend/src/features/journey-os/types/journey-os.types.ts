@@ -8,6 +8,21 @@
 
 export type CandidateMomentum = "fluid" | "stable" | "friction" | "stalled" | "recovery";
 
+/** Motivos da pausa — opções fechadas, nunca texto livre (o público inclui menores). */
+export type PauseReasonCode = "trabalho" | "tempo" | "outro";
+
+/**
+ * Pausa declarada em curso ("Jornada que Respira"). Campo à parte de
+ * `momentum` de propósito: momentum é *inferido* de comportamento, pausa é um
+ * fato *declarado* pelo candidato. Quando presente, tem precedência — a
+ * experiência para de cobrar avanço.
+ */
+export interface PauseState {
+  ends_at: string;
+  reason_code: PauseReasonCode | null;
+  resume_action_key: string | null;
+}
+
 export interface CandidateState {
   version: string;
   computed_at: string;
@@ -17,6 +32,17 @@ export interface CandidateState {
   pending_required_documents: number;
   days_to_exam: number | null;
   guardian_training_overdue: boolean;
+  pause: PauseState | null;
+}
+
+export interface PauseStartRequest {
+  days: number;
+  reason_code?: PauseReasonCode | null;
+}
+
+export interface PauseResumeResult {
+  resumed: boolean;
+  resume_action_key: string | null;
 }
 
 export type NextBestActionKey =
