@@ -21,6 +21,9 @@ from app.core.journey_os_metrics import safe_rate
 from app.models.activity_event import (
     EVENT_NBA_CLICKED,
     EVENT_NBA_GENERATED,
+    EVENT_PAUSE_EXPIRED,
+    EVENT_PAUSE_RESUMED,
+    EVENT_PAUSE_STARTED,
     EVENT_RECOVERY_ENTERED,
     EVENT_STEP_RESUMED,
 )
@@ -33,6 +36,9 @@ _TRACKED_EVENTS = (
     EVENT_NBA_CLICKED,
     EVENT_RECOVERY_ENTERED,
     EVENT_STEP_RESUMED,
+    EVENT_PAUSE_STARTED,
+    EVENT_PAUSE_RESUMED,
+    EVENT_PAUSE_EXPIRED,
 )
 
 
@@ -47,6 +53,10 @@ async def get_metrics(
     recovery_entered = counts.get(EVENT_RECOVERY_ENTERED, 0)
     step_resumed = counts.get(EVENT_STEP_RESUMED, 0)
 
+    pause_started = counts.get(EVENT_PAUSE_STARTED, 0)
+    pause_resumed = counts.get(EVENT_PAUSE_RESUMED, 0)
+    pause_expired = counts.get(EVENT_PAUSE_EXPIRED, 0)
+
     return JourneyOsMetricsResponse(
         window_days=window_days,
         nba_generated_count=nba_generated,
@@ -55,4 +65,12 @@ async def get_metrics(
         recovery_entered_count=recovery_entered,
         recovery_resumed_count=step_resumed,
         recovery_resume_rate=safe_rate(step_resumed, recovery_entered),
+        pause_started_count=pause_started,
+        pause_resumed_count=pause_resumed,
+        pause_expired_count=pause_expired,
+        # Numerador e denominador podem cair em janelas diferentes (pausa
+        # iniciada dia 1, retomada dia 9): numa janela curta a taxa fica
+        # distorcida por recorte, não por comportamento. Quem ler precisa
+        # saber disso — está dito no `description` do campo.
+        pause_return_rate=safe_rate(pause_resumed, pause_started),
     )

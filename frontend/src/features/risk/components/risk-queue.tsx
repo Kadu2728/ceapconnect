@@ -1,12 +1,13 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { CheckCircle2, ChevronRight, Users } from "lucide-react";
+import { CheckCircle2, ChevronRight, PauseCircle, Users } from "lucide-react";
 import { useState } from "react";
 
 import { CardListSkeleton } from "@/components/feedback/card-list-skeleton";
 import { QueryErrorState } from "@/components/feedback/query-error-state";
 import { Card } from "@/components/ui/card";
+import { formatFullDate } from "@/features/dashboard/utils/date";
 import { RiskBadge } from "@/features/risk/components/risk-badge";
 import { RiskExplanation } from "@/features/risk/components/risk-explanation";
 import { useRiskQueue } from "@/features/risk/hooks/use-risk-queue";
@@ -52,7 +53,12 @@ export function RiskQueue({ onSelectCandidate }: RiskQueueProps) {
     return <QueryErrorState onRetry={() => query.refetch()} />;
   }
 
-  const { items, total, counts_by_tier: countsByTier } = query.data;
+  const {
+    items,
+    total,
+    counts_by_tier: countsByTier,
+    paused_count: pausedCount,
+  } = query.data;
 
   return (
     <div className="flex flex-col gap-4">
@@ -95,6 +101,21 @@ export function RiskQueue({ onSelectCandidate }: RiskQueueProps) {
             })}
           </div>
         </div>
+
+        {pausedCount > 0 ? (
+          <p className="flex items-start gap-2 px-6 text-sm text-muted-foreground">
+            <PauseCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <span>
+              <span className="font-medium text-foreground">
+                {pausedCount}{" "}
+                {pausedCount === 1 ? "candidato avisou" : "candidatos avisaram"}
+              </span>{" "}
+              que {pausedCount === 1 ? "precisa" : "precisam"} de uns dias. Vale dar o
+              espaço que {pausedCount === 1 ? "ele pediu" : "eles pediram"} — quem pausa e
+              avisa não é quem some.
+            </span>
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap gap-2 px-6">
           {TIER_FILTERS.map((filter) => (
@@ -150,17 +171,31 @@ export function RiskQueue({ onSelectCandidate }: RiskQueueProps) {
 }
 
 function QueueRow({ item, onClick }: { item: RiskQueueItem; onClick: () => void }) {
+  const isPaused = item.paused_until !== null;
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-4 rounded-xl border bg-card px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-md"
+      className={cn(
+        "flex w-full items-center gap-4 rounded-xl border bg-card px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-md",
+        // Pausa declarada não sai da fila (quem não voltar depois do prazo é
+        // justamente o grupo mais crítico), mas perde destaque: o coordenador
+        // precisa enxergar de relance que aqui a espera foi combinada.
+        isPaused && "border-dashed opacity-75",
+      )}
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-medium">{item.candidate_name}</p>
           {item.cohort_name ? (
             <span className="text-xs text-muted-foreground">{item.cohort_name}</span>
+          ) : null}
+          {item.paused_until ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              <PauseCircle className="size-3" aria-hidden="true" />
+              Pausou até {formatFullDate(item.paused_until)}
+            </span>
           ) : null}
         </div>
         <div className="mt-1.5">

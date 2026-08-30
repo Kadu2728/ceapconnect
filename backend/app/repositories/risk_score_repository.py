@@ -7,14 +7,16 @@ então evita N+1 por natureza.
 """
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.risk_scoring import RiskTier
 from app.models.candidate_profile import STATUS_ACTIVE, CandidateProfile
 from app.models.cohort import Cohort
+from app.models.journey_pause import PAUSE_ACTIVE, JourneyPause
 from app.models.risk_score import RiskScore
 from app.models.risk_score_history import RiskScoreHistory
 from app.models.user import User
@@ -96,7 +98,7 @@ class RiskScoreRepository:
         cohort_ids: list[uuid.UUID] | None,
         tier: RiskTier | None = None,
         cohort_id_filter: uuid.UUID | None = None,
-    ) -> list[tuple[RiskScore, CandidateProfile, User, Cohort | None]]:
+    ) -> list[tuple[RiskScore, CandidateProfile, User, Cohort | None, JourneyPause | None]]:
         """Fila de risco, mais arriscado primeiro — já filtrada pelo escopo do RBAC.
 
         `cohort_ids=None` = irrestrito (admin). Uma lista (mesmo vazia) restringe
@@ -105,15 +107,29 @@ class RiskScoreRepository:
         `status=active`: quem já teve o outcome decidido (aprovado/evadido/
         desistente) some da fila imediatamente, sem esperar o próximo
         recálculo periódico.
+
+        Traz junto a pausa declarada em curso (LEFT JOIN, no máximo uma por
+        candidato pelo índice único parcial): é ela que permite ao coordenador
+        distinguir "avisou que precisava de uns dias" de "sumiu sem avisar" —
+        dois estados com a mesma cara na fila, e que pedem abordagens opostas.
         """
         if cohort_ids is not None and len(cohort_ids) == 0:
             return []
 
+        now = datetime.now(UTC)
         stmt = (
-            select(RiskScore, CandidateProfile, User, Cohort)
+            select(RiskScore, CandidateProfile, User, Cohort, JourneyPause)
             .join(CandidateProfile, CandidateProfile.id == RiskScore.candidate_profile_id)
             .join(User, User.id == CandidateProfile.user_id)
             .outerjoin(Cohort, Cohort.id == CandidateProfile.cohort_id)
+            .outerjoin(
+                JourneyPause,
+                and_(
+                    JourneyPause.candidate_profile_id == CandidateProfile.id,
+                    JourneyPause.status == PAUSE_ACTIVE,
+                    JourneyPause.ends_at > now,
+                ),
+            )
             .where(CandidateProfile.status == STATUS_ACTIVE)
             .order_by(RiskScore.score.desc())
         )
@@ -125,4 +141,4 @@ class RiskScoreRepository:
             stmt = stmt.where(RiskScore.tier == tier)
 
         result = await self._db.execute(stmt)
-        return [(row[0], row[1], row[2], row[3]) for row in result.all()]
+        return [(row[0], row[1], row[2], row[3], row[4]) for row in result.all()]

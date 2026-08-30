@@ -149,15 +149,21 @@ async def get_queue(
             tier=risk.tier,
             explanation=risk.explanation,
             computed_at=risk.computed_at,
+            paused_until=pause.ends_at if pause is not None else None,
         )
-        for risk, _profile, user, cohort in rows
+        for risk, _profile, user, cohort, pause in rows
     ]
 
     counts_by_tier = {"baixo": 0, "medio": 0, "alto": 0}
     for item in items:
         counts_by_tier[item.tier] += 1
 
-    return RiskQueueResponse(items=items, total=len(items), counts_by_tier=counts_by_tier)
+    return RiskQueueResponse(
+        items=items,
+        total=len(items),
+        counts_by_tier=counts_by_tier,
+        paused_count=sum(1 for item in items if item.paused_until is not None),
+    )
 
 
 async def get_candidate_risk(

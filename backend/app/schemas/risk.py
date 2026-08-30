@@ -44,6 +44,15 @@ class RiskQueueItem(BaseModel):
     tier: RiskTier
     explanation: str
     computed_at: datetime
+    # Pausa declarada em curso ("Jornada que Respira"): `None` = sem pausa.
+    # Distingue quem **avisou** que precisava de uns dias de quem simplesmente
+    # silenciou — dois estados com a mesma cara na fila e que pedem abordagens
+    # opostas (o primeiro pede espaço; o segundo pede contato).
+    #
+    # Deliberadamente **sem o motivo da pausa**: mostrar "pausou por trabalho"
+    # ao lado do nome de um menor convida julgamento sobre a vida dele. O
+    # motivo só existe em agregado, nunca individualizado aqui.
+    paused_until: datetime | None = None
 
 
 class RiskQueueResponse(BaseModel):
@@ -52,6 +61,9 @@ class RiskQueueResponse(BaseModel):
     items: list[RiskQueueItem]
     total: int
     counts_by_tier: dict[str, int]
+    #: Quantos da fila estão em pausa declarada — o coordenador vê de cara
+    #: quanto da sua fila é "espera combinada", não fogo para apagar.
+    paused_count: int = 0
 
 
 class ActivityTimelineItem(BaseModel):

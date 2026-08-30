@@ -22,12 +22,19 @@ export interface RiskQueueItem {
   tier: RiskTier;
   explanation: string;
   computed_at: string;
+  /**
+   * Pausa declarada em curso ("Jornada que Respira"); `null` = sem pausa.
+   * Distingue quem avisou que precisava de uns dias de quem só silenciou.
+   * Nunca traz o motivo da pausa — ele só existe em agregado.
+   */
+  paused_until: string | null;
 }
 
 export interface RiskQueueResponse {
   items: RiskQueueItem[];
   total: number;
   counts_by_tier: Record<RiskTier, number>;
+  paused_count: number;
 }
 
 export interface ActivityTimelineItem {
