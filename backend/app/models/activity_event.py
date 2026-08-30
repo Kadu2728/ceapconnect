@@ -45,6 +45,9 @@ ActivityEventName = Literal[
     "recovery_entered",
     "recovery_completed",
     "recovery_exited",
+    "pause_started",
+    "pause_resumed",
+    "pause_expired",
 ]
 
 EVENT_LOGIN: Final = "login"
@@ -75,6 +78,15 @@ EVENT_NBA_COMPLETED: Final = "nba_completed"
 EVENT_RECOVERY_ENTERED: Final = "recovery_entered"
 EVENT_RECOVERY_COMPLETED: Final = "recovery_completed"
 EVENT_RECOVERY_EXITED: Final = "recovery_exited"
+# Pausa Declarada ("Jornada que Respira" — fase 1): três momentos reais e
+# distintos. Não existe um `pause_requested` separado de `pause_started`
+# porque não há etapa de aprovação entre os dois — seriam duas linhas para o
+# mesmo instante. `pause_resumed` (voltou por vontade própria) e
+# `pause_expired` (deixou o prazo passar) são o par que sustenta a métrica
+# principal da feature: taxa de retorno após pausa.
+EVENT_PAUSE_STARTED: Final = "pause_started"
+EVENT_PAUSE_RESUMED: Final = "pause_resumed"
+EVENT_PAUSE_EXPIRED: Final = "pause_expired"
 
 # Vocabulário fechado de eventos (CHECK constraint). `mission_completed` não
 # estava na lista original da spec, mas é emitido por um fluxo que já existe
@@ -97,6 +109,9 @@ _VALID_EVENT_NAMES: Final = (
     EVENT_RECOVERY_ENTERED,
     EVENT_RECOVERY_COMPLETED,
     EVENT_RECOVERY_EXITED,
+    EVENT_PAUSE_STARTED,
+    EVENT_PAUSE_RESUMED,
+    EVENT_PAUSE_EXPIRED,
 )
 
 

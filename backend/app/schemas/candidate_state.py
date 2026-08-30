@@ -12,6 +12,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from app.core.candidate_state_scoring import CandidateMomentum
+from app.schemas.journey_pause import PauseState
 
 #: Subconjunto do vocabulário de `app.models.activity_event` que o próprio
 #: candidato pode disparar client-side (cliques, entrada/saída de modo).
@@ -58,3 +59,11 @@ class CandidateStateResponse(BaseModel):
         default=None, description="Dias até a prova. `None` se `exam_date` não estiver definida."
     )
     guardian_training_overdue: bool
+    pause: PauseState | None = Field(
+        default=None,
+        description=(
+            "Pausa declarada em curso, ou `None`. Quando presente, tem "
+            "precedência sobre `momentum`: a experiência para de cobrar avanço "
+            "(sem Next Best Action, sem Modo Resgate)."
+        ),
+    )

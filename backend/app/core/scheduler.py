@@ -20,7 +20,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from app.services import reminder_service, risk_service
+from app.services import journey_pause_service, reminder_service, risk_service
 
 logger = logging.getLogger("ceap_connect.scheduler")
 
@@ -52,13 +52,24 @@ async def _run_recompute() -> None:
 
 
 async def _run_reminder_check() -> None:
-    """Executa um ciclo de verificação de lembretes, numa sessão de banco própria do job.
+    """Expira pausas declaradas vencidas e, em seguida, verifica os lembretes.
+
+    A ordem importa, e por isso os dois moram no mesmo job: uma pausa vencida
+    precisa parar de suprimir a cobrança de documentação **já nesta passada**.
+    Um terceiro job só para expirar pausas disputaria o processo único do
+    plano free do Render sem ganhar nada — o único consumidor que depende de
+    expiração pontual é justamente o lembrete (a leitura do candidato já
+    ignora pausa vencida por conta própria, ver `get_active_now`).
 
     Qualquer falha é logada e contida aqui — nunca propaga a ponto de derrubar
     o scheduler ou o processo web (mesmo racional de `_run_recompute`).
     """
     async with AsyncSessionLocal() as db:
         try:
+            expired = await journey_pause_service.expire_due_pauses(db)
+            if expired:
+                logger.info("%d pausa(s) declarada(s) expirada(s).", expired)
+
             summary = await reminder_service.check_and_send_reminders(db)
             logger.info(
                 "Verificação de lembretes concluída: %d candidato(s) checado(s), "

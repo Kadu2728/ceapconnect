@@ -21,6 +21,13 @@ async def get_next_best_action(db: AsyncSession, user: User) -> NextBestAction |
     """Recomendação atual do candidato autenticado, ou `None` se nada for acionável."""
     state = await candidate_state_service.get_candidate_state(db, user)
 
+    # Pausa declarada tem precedência: o candidato avisou que a vida apertou,
+    # e o produto para de cobrar avanço enquanto isso. Recomendar uma ação
+    # agora seria cobrar de quem acabou de pedir um respiro — e nenhum
+    # `nba_generated` deve ser contado, já que nada será mostrado.
+    if state.pause is not None:
+        return None
+
     action = recommend(
         NextBestActionInput(
             momentum=state.momentum,

@@ -38,6 +38,7 @@ from app.models.reminder_log import (
 )
 from app.repositories.candidate_document_repository import CandidateDocumentRepository
 from app.repositories.candidate_profile_repository import CandidateProfileRepository
+from app.repositories.journey_pause_repository import JourneyPauseRepository
 from app.repositories.reminder_log_repository import ReminderLogRepository
 from app.schemas.reminder import ReminderCheckSummary
 from app.services import notification_service
@@ -70,6 +71,9 @@ async def check_and_send_reminders(db: AsyncSession) -> ReminderCheckSummary:
     }
 
     doc_counts = await CandidateDocumentRepository(db).count_by_profile_ids(profile_ids)
+    # Uma query para todos (nunca `get_active` dentro do loop — seria o N+1
+    # que este job foi desenhado para evitar).
+    paused_ids = await JourneyPauseRepository(db).set_paused_profile_ids(profile_ids)
 
     today = datetime.now(UTC).date()
     sent_count = 0
@@ -80,6 +84,7 @@ async def check_and_send_reminders(db: AsyncSession) -> ReminderCheckSummary:
             today=today,
             uploaded_document_count=doc_counts.get(profile.id, 0),
             already_sent=already_sent,
+            is_paused=profile.id in paused_ids,
         )
 
     await db.commit()
@@ -98,8 +103,17 @@ async def _check_profile(
     today: date,
     uploaded_document_count: int,
     already_sent: dict[ReminderType, set[uuid.UUID]],
+    is_paused: bool,
 ) -> int:
-    """Avalia e dispara os lembretes aplicáveis a um único candidato. Retorna quantos enviou."""
+    """Avalia e dispara os lembretes aplicáveis a um único candidato. Retorna quantos enviou.
+
+    Durante uma pausa declarada, a **cobrança de avanço** (documentação) é
+    suspensa, mas os **avisos de data marcada** (prova, entrevista) continuam
+    saindo normalmente. A distinção é deliberada: um jovem que pausou porque
+    pegou um turno extra ainda precisa saber que a prova é amanhã — silenciar
+    esse aviso faria a pausa custar a vaga, exatamente o oposto do KPI que o
+    produto existe para proteger.
+    """
     sent = 0
 
     days_to_exam = (profile.exam_date - today).days if profile.exam_date is not None else None
@@ -145,7 +159,8 @@ async def _check_profile(
     pending_documents = max(0, _REQUIRED_DOCUMENT_COUNT - uploaded_document_count)
     days_since_registration = (datetime.now(UTC) - profile.created_at).total_seconds() / 86400
     if (
-        should_remind_documentation_incomplete(
+        not is_paused
+        and should_remind_documentation_incomplete(
             days_since_registration=days_since_registration, pending_documents=pending_documents
         )
         and profile.id not in already_sent[REMINDER_DOCUMENTATION_INCOMPLETE]

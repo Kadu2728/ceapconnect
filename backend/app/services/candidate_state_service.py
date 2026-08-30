@@ -23,7 +23,9 @@ from app.core.candidate_state_scoring import STATE_VERSION, classify_momentum
 from app.models.candidate_document import REQUIRED_DOCUMENT_TYPES
 from app.models.user import User
 from app.repositories.candidate_document_repository import CandidateDocumentRepository
+from app.repositories.journey_pause_repository import JourneyPauseRepository
 from app.schemas.candidate_state import CandidateStateResponse, CandidateTrackableEvent
+from app.schemas.journey_pause import PauseState
 from app.services import activity_event_service, journey_service, risk_feature_service
 from app.services.candidate_profile_service import get_profile_or_raise
 
@@ -47,19 +49,29 @@ async def get_candidate_state(db: AsyncSession, user: User) -> CandidateStateRes
     doc_counts = await CandidateDocumentRepository(db).count_by_profile_ids([profile.id])
     pending_documents = max(0, _REQUIRED_DOCUMENT_COUNT - doc_counts.get(profile.id, 0))
 
+    now = datetime.now(UTC)
     days_to_exam = None
     if profile.exam_date is not None:
-        days_to_exam = (profile.exam_date - datetime.now(UTC).date()).days
+        days_to_exam = (profile.exam_date - now.date()).days
+
+    # Pausa declarada ("Jornada que Respira"): campo à parte, nunca um sexto
+    # valor de `momentum`. Os cinco valores de momentum são *inferidos* de
+    # comportamento; a pausa é um fato *declarado* e persistido — colapsar os
+    # dois obrigaria a injetar estado de banco na classificação pura e
+    # apagaria justamente a distinção que o Console de Intervenção precisa
+    # ("pausou e avisou" ≠ "silenciou").
+    active_pause = await JourneyPauseRepository(db).get_active_now(profile.id, now=now)
 
     return CandidateStateResponse(
         version=STATE_VERSION,
-        computed_at=datetime.now(UTC),
+        computed_at=now,
         momentum=classify_momentum(features),
         current_step_key=profile.current_journey_step_key,
         days_since_last_activity=features.days_since_last_activity,
         pending_required_documents=pending_documents,
         days_to_exam=days_to_exam,
         guardian_training_overdue=features.guardian_training_overdue,
+        pause=PauseState.model_validate(active_pause) if active_pause is not None else None,
     )
 
 
