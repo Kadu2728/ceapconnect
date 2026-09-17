@@ -166,6 +166,36 @@ async def test_aula_conclui_ao_cruzar_o_limiar_uma_unica_vez(
     assert again.just_completed is False
 
 
+async def test_conclusao_concorrente_so_uma_chamada_recebe_just_completed(
+    db_session: AsyncSession, guardian_user: User
+) -> None:
+    """Regressão de um bug visto em produção: ao terminar, o `<video>` dispara
+    `pause` e `ended` em sequência — dois flushes quase simultâneos. Ambos
+    liam `completed_at=None` em memória e devolviam `just_completed=True`, e
+    o candidato via dois toasts. A transição precisa ser atômica no banco.
+
+    Simulado com dois `LessonProgress` carregados separadamente na mesma
+    transação (o mesmo estado "os dois leram None" que duas requisições
+    reais teriam)."""
+    _, lessons = await _course(db_session, audience=ROLE_GUARDIAN, lesson_count=1)
+    lesson = lessons[0]
+    from datetime import UTC, datetime
+
+    from app.repositories.learning_repository import LearningRepository
+
+    repo = LearningRepository(db_session)
+    progress = await repo.create_progress(
+        user_id=guardian_user.id, lesson_id=lesson.id, started_at=datetime.now(UTC)
+    )
+    now = datetime.now(UTC)
+
+    first = await repo.mark_completed_once(progress.id, completed_at=now)
+    second = await repo.mark_completed_once(progress.id, completed_at=now)
+
+    assert first is True
+    assert second is False
+
+
 async def test_posicao_nunca_regride_com_scrub_para_tras(
     db_session: AsyncSession, guardian_user: User
 ) -> None:

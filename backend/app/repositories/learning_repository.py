@@ -12,7 +12,7 @@ mais é um segundo de tela em branco.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.learning import Course, CourseAudience, CourseModule, Lesson, LessonProgress
@@ -159,3 +159,20 @@ class LearningRepository:
         self._db.add(progress)
         await self._db.flush()
         return progress
+
+    async def mark_completed_once(self, progress_id: uuid.UUID, *, completed_at: datetime) -> bool:
+        """Conclui a aula **atomicamente**; `True` só para a chamada que de fato concluiu.
+
+        `UPDATE … WHERE completed_at IS NULL` deixa o banco serializar a
+        transição: duas requisições simultâneas (o `<video>` dispara `pause` e
+        `ended` em sequência ao terminar — dois flushes quase ao mesmo tempo)
+        leem ambas `completed_at = None` em memória, mas só uma consegue o
+        UPDATE. Sem isso, as duas devolviam `just_completed=True` e o
+        candidato via dois toasts de "Aula concluída!".
+        """
+        result = await self._db.execute(
+            update(LessonProgress)
+            .where(LessonProgress.id == progress_id, LessonProgress.completed_at.is_(None))
+            .values(completed_at=completed_at)
+        )
+        return (result.rowcount or 0) == 1

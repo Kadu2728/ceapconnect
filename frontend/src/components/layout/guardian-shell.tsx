@@ -91,8 +91,9 @@ export function GuardianShell({ userName, children, className }: GuardianShellPr
                   )}
                 >
                   <item.icon className="size-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                  <span className="sr-only sm:hidden">{item.label}</span>
+                  {/* Um único nó: só ícone no celular, ícone + texto no desktop —
+                      leitores de tela recebem o rótulo nos dois casos. */}
+                  <span className="sr-only sm:not-sr-only">{item.label}</span>
                 </Link>
               );
             })}

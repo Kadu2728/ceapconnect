@@ -51,25 +51,36 @@ export function useLessonProgress(lessonId: string, courseSlug: string) {
   });
 
   const { mutate } = mutation;
+  const lastSentPositionRef = useRef(-1);
 
-  const report = useCallback(
+  // Grava só se a posição inteira mudou desde a última gravação. O `<video>`
+  // dispara `pause` e `ended` em sequência ao terminar — sem isso, dois
+  // flushes idênticos saem quase ao mesmo tempo: uma request a mais no plano
+  // de dados e uma corrida no backend (que ele resolve, mas não precisa).
+  const send = useCallback(
     (positionSeconds: number) => {
-      lastPositionRef.current = positionSeconds;
-      const now = Date.now();
-      if (now - lastSentAtRef.current >= SYNC_INTERVAL_MS) {
-        lastSentAtRef.current = now;
-        mutate(Math.floor(positionSeconds));
-      }
+      const whole = Math.floor(positionSeconds);
+      if (whole === lastSentPositionRef.current) return;
+      lastSentPositionRef.current = whole;
+      lastSentAtRef.current = Date.now();
+      mutate(whole);
     },
     [mutate],
   );
 
+  const report = useCallback(
+    (positionSeconds: number) => {
+      lastPositionRef.current = positionSeconds;
+      if (Date.now() - lastSentAtRef.current >= SYNC_INTERVAL_MS) {
+        send(positionSeconds);
+      }
+    },
+    [send],
+  );
+
   const flush = useCallback(() => {
-    if (lastPositionRef.current > 0) {
-      lastSentAtRef.current = Date.now();
-      mutate(Math.floor(lastPositionRef.current));
-    }
-  }, [mutate]);
+    if (lastPositionRef.current > 0) send(lastPositionRef.current);
+  }, [send]);
 
   // Sair da página (voltar, fechar a aba, trocar de app no celular) grava a
   // última posição — sem isso, os últimos segundos antes de sair se perdem.

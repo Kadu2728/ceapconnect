@@ -172,8 +172,13 @@ async def update_progress(
     just_completed = False
     crossed_threshold = _watched_fraction(lesson, progress) >= COMPLETION_THRESHOLD
     if progress.completed_at is None and crossed_threshold:
-        progress.completed_at = now
-        just_completed = True
+        # Transição atômica no banco — ver `mark_completed_once`. Só a
+        # requisição que venceu a corrida recebe `just_completed=True`.
+        just_completed = await repo.mark_completed_once(progress.id, completed_at=now)
+        if just_completed:
+            progress.completed_at = now
+        else:
+            await db.refresh(progress)
 
     await db.commit()
 

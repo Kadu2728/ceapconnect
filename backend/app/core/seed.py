@@ -781,12 +781,16 @@ async def _seed_rewards(db: AsyncSession) -> int:
 # placeholders deliberadamente genéricos (o brief proíbe inventar conteúdo
 # institucional real); a coordenação substitui pelo painel admin.
 #
-# Os vídeos são amostras públicas do Google (gtv-videos-bucket), curtas de
-# propósito: 15–60s cada, para a demonstração não consumir a franquia de
-# dados de ninguém. `duration_seconds` é a duração REAL de cada arquivo — o
-# limiar de conclusão (90%) depende disso; um valor inventado deixaria a aula
-# eternamente "em andamento".
-_MOCK_VIDEO_BASE = "https://storage.googleapis.com/gtv-videos-bucket/sample"
+# Os vídeos são amostras CC0 hospedadas pela Mozilla para a documentação da
+# MDN — licença livre, hospedagem estável e CORS aberto (o bucket de amostras
+# do Google devolve 403 fora do domínio dele). Curtos de propósito (5–6s,
+# ~0,5–1 MB): a demonstração não consome a franquia de dados de ninguém.
+# `duration_seconds` é a duração REAL de cada arquivo — o limiar de conclusão
+# (90%) depende disso; um valor inventado deixaria a aula eternamente "em
+# andamento".
+_MOCK_VIDEO_BASE = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos"
+_MOCK_FLOWER = (f"{_MOCK_VIDEO_BASE}/flower.mp4", 5)
+_MOCK_FRIDAY = (f"{_MOCK_VIDEO_BASE}/friday.mp4", 6)
 
 _COURSES: tuple[dict, ...] = (
     {
@@ -805,20 +809,20 @@ _COURSES: tuple[dict, ...] = (
                     {
                         "title": "Boas-vindas à Formação de Pais",
                         "description": "Uma visão geral do que você vai encontrar neste curso.",
-                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerBlazes.mp4",
-                        "duration_seconds": 15,
+                        "video_ref": _MOCK_FLOWER[0],
+                        "duration_seconds": _MOCK_FLOWER[1],
                     },
                     {
                         "title": "Como funciona o processo seletivo",
                         "description": "As etapas que seu candidato vai percorrer.",
-                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerEscapes.mp4",
-                        "duration_seconds": 15,
+                        "video_ref": _MOCK_FRIDAY[0],
+                        "duration_seconds": _MOCK_FRIDAY[1],
                     },
                     {
                         "title": "O papel da família na permanência",
                         "description": "Por que a presença do responsável faz diferença.",
-                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerFun.mp4",
-                        "duration_seconds": 60,
+                        "video_ref": _MOCK_FLOWER[0],
+                        "duration_seconds": _MOCK_FLOWER[1],
                     },
                 ),
             },
@@ -829,20 +833,20 @@ _COURSES: tuple[dict, ...] = (
                     {
                         "title": "Comunicação em casa",
                         "description": "Conversas que ajudam, conversas que atrapalham.",
-                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerJoyrides.mp4",
-                        "duration_seconds": 15,
+                        "video_ref": _MOCK_FRIDAY[0],
+                        "duration_seconds": _MOCK_FRIDAY[1],
                     },
                     {
                         "title": "Rotina de estudos",
                         "description": "Como criar condições para o estudo sem pressão excessiva.",
-                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerMeltdowns.mp4",
-                        "duration_seconds": 15,
+                        "video_ref": _MOCK_FLOWER[0],
+                        "duration_seconds": _MOCK_FLOWER[1],
                     },
                     {
                         "title": "O dia da prova",
                         "description": "O que fazer na véspera e no dia.",
-                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerFun.mp4",
-                        "duration_seconds": 60,
+                        "video_ref": _MOCK_FRIDAY[0],
+                        "duration_seconds": _MOCK_FRIDAY[1],
                     },
                 ),
             },
