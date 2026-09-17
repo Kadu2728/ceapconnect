@@ -2,14 +2,13 @@
 
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useParams } from "next/navigation";
 
 import { CardListSkeleton } from "@/components/feedback/card-list-skeleton";
 import { QueryErrorState } from "@/components/feedback/query-error-state";
 import { GuardianShell } from "@/components/layout/guardian-shell";
 import { PageHeader } from "@/components/layout/page-header";
-import { useRequireAuth } from "@/features/auth/hooks/use-require-auth";
+import { useRequireGuardian } from "@/features/auth/hooks/use-require-guardian";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { GuardianChildJourneyView } from "@/features/guardian-access/components/guardian-child-journey-view";
 import { useGuardianChildJourney } from "@/features/guardian-access/hooks/use-guardian-child-journey";
@@ -21,21 +20,13 @@ import { useGuardianChildJourney } from "@/features/guardian-access/hooks/use-gu
  * backend responde 403 antes de ler qualquer campo do candidato.
  */
 export default function AreaResponsavelChildPage() {
-  const router = useRouter();
   const params = useParams<{ candidateProfileId: string }>();
   const candidateProfileId = params.candidateProfileId;
 
-  const isAuthorized = useRequireAuth();
+  const isAuthorized = useRequireGuardian();
   const storedUser = useAuthStore((state) => state.user);
-  const isGuardian = storedUser?.role === "guardian";
 
   const journeyQuery = useGuardianChildJourney(candidateProfileId);
-
-  useEffect(() => {
-    if (isAuthorized && storedUser && !isGuardian) {
-      router.replace("/dashboard");
-    }
-  }, [isAuthorized, storedUser, isGuardian, router]);
 
   return (
     <GuardianShell userName={storedUser?.name ?? "responsável"}>
@@ -47,7 +38,7 @@ export default function AreaResponsavelChildPage() {
         Meus candidatos
       </Link>
 
-      {!isAuthorized || !isGuardian || journeyQuery.isPending ? (
+      {!isAuthorized || journeyQuery.isPending ? (
         <>
           <PageHeader eyebrow="Área do responsável" title="Carregando…" />
           <CardListSkeleton count={3} />
