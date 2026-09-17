@@ -23,6 +23,7 @@ from app.api.v1.guardian_portal import router as guardian_portal_router
 from app.api.v1.health import router as health_router
 from app.api.v1.internal import router as internal_router
 from app.api.v1.journey_pause import router as journey_pause_router
+from app.api.v1.learning import router as learning_router
 from app.api.v1.missions import router as missions_router
 from app.api.v1.next_best_action import router as next_best_action_router
 from app.api.v1.notifications import router as notifications_router
@@ -42,6 +43,7 @@ api_router.include_router(dashboard_router)
 api_router.include_router(candidate_state_router)
 api_router.include_router(next_best_action_router)
 api_router.include_router(journey_pause_router)
+api_router.include_router(learning_router)
 api_router.include_router(documents_router)
 api_router.include_router(missions_router)
 api_router.include_router(achievements_router)

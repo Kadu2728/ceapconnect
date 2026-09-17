@@ -19,3 +19,4 @@ class SeedSummary(BaseModel):
     cohorts_created: int
     profiles_assigned_to_cohort: int
     simulado_questions_created: int
+    courses_created: int = 0

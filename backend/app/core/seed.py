@@ -27,6 +27,7 @@ from app.models.candidate_profile import CandidateProfile
 from app.models.cohort import Cohort
 from app.models.event import Event
 from app.models.journey_step import JourneyStep
+from app.models.learning import Course, CourseModule, Lesson
 from app.models.mission import Mission
 from app.models.reward import Reward
 from app.models.simulado import SUBJECT_MATEMATICA, SUBJECT_PORTUGUES, SimuladoQuestion
@@ -774,6 +775,123 @@ async def _seed_rewards(db: AsyncSession) -> int:
     return len(to_create)
 
 
+# --- Videoaulas — CONTEÚDO MOCKADO ------------------------------------------
+#
+# Estrutura de demonstração da Formação de Pais. Títulos e descrições são
+# placeholders deliberadamente genéricos (o brief proíbe inventar conteúdo
+# institucional real); a coordenação substitui pelo painel admin.
+#
+# Os vídeos são amostras públicas do Google (gtv-videos-bucket), curtas de
+# propósito: 15–60s cada, para a demonstração não consumir a franquia de
+# dados de ninguém. `duration_seconds` é a duração REAL de cada arquivo — o
+# limiar de conclusão (90%) depende disso; um valor inventado deixaria a aula
+# eternamente "em andamento".
+_MOCK_VIDEO_BASE = "https://storage.googleapis.com/gtv-videos-bucket/sample"
+
+_COURSES: tuple[dict, ...] = (
+    {
+        "slug": "formacao-de-pais",
+        "title": "Formação de Pais",
+        "description": (
+            "Curso obrigatório para responsáveis de candidatos do CEAP. "
+            "Assista às aulas no seu ritmo — seu progresso fica salvo."
+        ),
+        "audience": "guardian",
+        "modules": (
+            {
+                "title": "Conhecendo o CEAP",
+                "description": "O que é o CEAP, como funciona e o papel da família.",
+                "lessons": (
+                    {
+                        "title": "Boas-vindas à Formação de Pais",
+                        "description": "Uma visão geral do que você vai encontrar neste curso.",
+                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerBlazes.mp4",
+                        "duration_seconds": 15,
+                    },
+                    {
+                        "title": "Como funciona o processo seletivo",
+                        "description": "As etapas que seu candidato vai percorrer.",
+                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerEscapes.mp4",
+                        "duration_seconds": 15,
+                    },
+                    {
+                        "title": "O papel da família na permanência",
+                        "description": "Por que a presença do responsável faz diferença.",
+                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerFun.mp4",
+                        "duration_seconds": 60,
+                    },
+                ),
+            },
+            {
+                "title": "Acompanhamento e desenvolvimento",
+                "description": "Como apoiar o candidato durante a preparação.",
+                "lessons": (
+                    {
+                        "title": "Comunicação em casa",
+                        "description": "Conversas que ajudam, conversas que atrapalham.",
+                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerJoyrides.mp4",
+                        "duration_seconds": 15,
+                    },
+                    {
+                        "title": "Rotina de estudos",
+                        "description": "Como criar condições para o estudo sem pressão excessiva.",
+                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerMeltdowns.mp4",
+                        "duration_seconds": 15,
+                    },
+                    {
+                        "title": "O dia da prova",
+                        "description": "O que fazer na véspera e no dia.",
+                        "video_ref": f"{_MOCK_VIDEO_BASE}/ForBiggerFun.mp4",
+                        "duration_seconds": 60,
+                    },
+                ),
+            },
+        ),
+    },
+)
+
+
+async def _seed_courses(db: AsyncSession) -> int:
+    """Semeia os cursos com módulos e aulas. Idempotente por `slug`.
+
+    Só cria o curso inteiro quando o slug não existe — nunca reconcilia
+    módulos/aulas de um curso já semeado, para não sobrescrever o que a
+    coordenação editou pelo painel.
+    """
+    existing = {row.slug for row in (await db.execute(select(Course.slug))).all()}
+
+    created = 0
+    for course_data in _COURSES:
+        if course_data["slug"] in existing:
+            continue
+        course = Course(
+            slug=course_data["slug"],
+            title=course_data["title"],
+            description=course_data["description"],
+            audience=course_data["audience"],
+        )
+        db.add(course)
+        await db.flush()
+
+        for module_order, module_data in enumerate(course_data["modules"], start=1):
+            module = CourseModule(
+                course_id=course.id,
+                title=module_data["title"],
+                description=module_data["description"],
+                order=module_order,
+            )
+            db.add(module)
+            await db.flush()
+
+            db.add_all(
+                Lesson(module_id=module.id, order=lesson_order, **lesson_data)
+                for lesson_order, lesson_data in enumerate(module_data["lessons"], start=1)
+            )
+        created += 1
+
+    return created
+
+
 async def _seed_simulado_questions(db: AsyncSession) -> int:
     existing = {
         row.statement for row in (await db.execute(select(SimuladoQuestion.statement))).all()
@@ -805,6 +923,7 @@ class SeedSummary:
     cohorts_created: int
     profiles_assigned_to_cohort: int
     simulado_questions_created: int
+    courses_created: int = 0
 
 
 async def seed() -> SeedSummary:
@@ -820,6 +939,7 @@ async def seed() -> SeedSummary:
         created_rewards = await _seed_rewards(db)
         created_cohorts, assigned_profiles = await _seed_cohort(db)
         created_questions = await _seed_simulado_questions(db)
+        created_courses = await _seed_courses(db)
         await db.commit()
 
     summary = SeedSummary(
@@ -831,6 +951,7 @@ async def seed() -> SeedSummary:
         cohorts_created=created_cohorts,
         profiles_assigned_to_cohort=assigned_profiles,
         simulado_questions_created=created_questions,
+        courses_created=created_courses,
     )
     logger.info(
         "Seed concluído: %d etapas, %d missões, %d conquistas, %d eventos, "

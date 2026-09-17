@@ -70,6 +70,7 @@ async def trigger_seed() -> ApiResponse[SeedSummary]:
         cohorts_created=result.cohorts_created,
         profiles_assigned_to_cohort=result.profiles_assigned_to_cohort,
         simulado_questions_created=result.simulado_questions_created,
+        courses_created=result.courses_created,
     )
     return ApiResponse(success=True, message="Seed concluído.", data=data)
 

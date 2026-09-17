@@ -100,8 +100,21 @@ async def test_sem_data_de_prova_nem_documento_pendente_nao_envia_nada(
 ) -> None:
     # `exam_date`/`interview_date` continuam `None` (fixture não define).
     # Documentação ainda está dentro da janela de tolerância (cadastro recente).
-    summary = await reminder_service.check_and_send_reminders(db_session)
-    assert summary.reminders_sent == 0
+    await reminder_service.check_and_send_reminders(db_session)
+
+    # Checa *este* candidato, não o total global: o job percorre todos os
+    # candidatos reais do banco compartilhado, e em qualquer dia algum deles
+    # pode legitimamente cair numa janela de lembrete.
+    logs = (
+        (
+            await db_session.execute(
+                select(ReminderLog).where(ReminderLog.candidate_profile_id == candidate_profile.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert logs == []
 
 
 async def test_dois_candidatos_diferentes_recebem_o_mesmo_lembrete_independentemente(
