@@ -12,7 +12,7 @@ mais é um segundo de tela em branco.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.learning import Course, CourseAudience, CourseModule, Lesson, LessonProgress
@@ -75,6 +75,59 @@ class LearningRepository:
         )
         row = (await self._db.execute(stmt)).first()
         return (row[0], row[1]) if row is not None else None
+
+    # --- Gestão (admin) -----------------------------------------------------
+
+    async def list_all_courses(self) -> list[Course]:
+        """Todos os cursos, ativos e inativos — só para o painel de gestão."""
+        stmt = select(Course).order_by(Course.audience, Course.title)
+        return list((await self._db.execute(stmt)).scalars().all())
+
+    async def count_modules_and_lessons(
+        self, course_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, tuple[int, int]]:
+        """(módulos, aulas) por curso, em duas queries agregadas — nunca N+1."""
+        if not course_ids:
+            return {}
+        module_counts = (
+            await self._db.execute(
+                select(CourseModule.course_id, func.count())
+                .where(CourseModule.course_id.in_(course_ids))
+                .group_by(CourseModule.course_id)
+            )
+        ).all()
+        lesson_counts = (
+            await self._db.execute(
+                select(CourseModule.course_id, func.count())
+                .join(Lesson, Lesson.module_id == CourseModule.id)
+                .where(CourseModule.course_id.in_(course_ids))
+                .group_by(CourseModule.course_id)
+            )
+        ).all()
+        modules_by = {course_id: count for course_id, count in module_counts}
+        lessons_by = {course_id: count for course_id, count in lesson_counts}
+        return {cid: (modules_by.get(cid, 0), lessons_by.get(cid, 0)) for cid in course_ids}
+
+    async def list_lessons_for_modules(self, module_ids: list[uuid.UUID]) -> list[Lesson]:
+        """Todas as aulas (inclusive inativas) — a gestão precisa vê-las para reativar."""
+        if not module_ids:
+            return []
+        stmt = (
+            select(Lesson)
+            .where(Lesson.module_id.in_(module_ids))
+            .order_by(Lesson.module_id, Lesson.order)
+        )
+        return list((await self._db.execute(stmt)).scalars().all())
+
+    async def get_module(self, module_id: uuid.UUID) -> CourseModule | None:
+        return await self._db.get(CourseModule, module_id)
+
+    async def get_lesson(self, lesson_id: uuid.UUID) -> Lesson | None:
+        return await self._db.get(Lesson, lesson_id)
+
+    def add(self, entity: Course | CourseModule | Lesson) -> None:
+        """Adiciona à sessão (flush/commit ficam com o service)."""
+        self._db.add(entity)
 
     # --- Progresso ----------------------------------------------------------
 

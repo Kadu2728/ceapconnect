@@ -8,8 +8,10 @@ import { QueryErrorState } from "@/components/feedback/query-error-state";
 import { AuthenticatedShell } from "@/components/layout/authenticated-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { AdminContent } from "@/features/admin/components/admin-content";
+import { CoursesManager } from "@/features/admin/components/learning/courses-manager";
 import { RedemptionsPanel } from "@/features/admin/components/redemptions-panel";
 import { RewardsManager } from "@/features/admin/components/rewards-manager";
+import { useAdminCourses } from "@/features/admin/hooks/use-admin-learning";
 import { useAdminOverview } from "@/features/admin/hooks/use-admin-overview";
 import { useAdminRewards } from "@/features/admin/hooks/use-admin-rewards";
 import { useRedemptions } from "@/features/admin/hooks/use-redemptions";
@@ -32,6 +34,7 @@ export default function AdminPage() {
   const overviewQuery = useAdminOverview();
   const redemptionsQuery = useRedemptions();
   const rewardsQuery = useAdminRewards();
+  const coursesQuery = useAdminCourses();
 
   useEffect(() => {
     if (isAuthorized && storedUser && !isAdmin) {
@@ -59,6 +62,7 @@ export default function AdminPage() {
         <div className="flex flex-col gap-6">
           <AdminContent data={overviewQuery.data} />
           {rewardsQuery.isSuccess ? <RewardsManager data={rewardsQuery.data} /> : null}
+          {coursesQuery.isSuccess ? <CoursesManager data={coursesQuery.data} /> : null}
           {redemptionsQuery.isSuccess ? (
             <RedemptionsPanel data={redemptionsQuery.data} />
           ) : null}
