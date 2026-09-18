@@ -777,8 +777,9 @@ async def _seed_rewards(db: AsyncSession) -> int:
 
 # --- Videoaulas — CONTEÚDO MOCKADO ------------------------------------------
 #
-# Estrutura de demonstração da Formação de Pais. Títulos e descrições são
-# placeholders deliberadamente genéricos (o brief proíbe inventar conteúdo
+# Estrutura de demonstração dos dois cursos (Formação de Pais para o
+# responsável, Preparação para a Prova para o candidato). Títulos e descrições
+# são placeholders deliberadamente genéricos (o brief proíbe inventar conteúdo
 # institucional real); a coordenação substitui pelo painel admin.
 #
 # Os vídeos são amostras CC0 hospedadas pela Mozilla para a documentação da
@@ -845,6 +846,65 @@ _COURSES: tuple[dict, ...] = (
                     {
                         "title": "O dia da prova",
                         "description": "O que fazer na véspera e no dia.",
+                        "video_ref": _MOCK_FRIDAY[0],
+                        "duration_seconds": _MOCK_FRIDAY[1],
+                    },
+                ),
+            },
+        ),
+    },
+    {
+        "slug": "preparacao-para-a-prova",
+        "title": "Preparação para a Prova",
+        "description": (
+            "Aulas curtas para você entender como a prova funciona e chegar "
+            "preparado no dia. Assista no seu ritmo — seu progresso fica salvo."
+        ),
+        "audience": "candidate",
+        "modules": (
+            {
+                "title": "Entendendo a prova",
+                "description": "Como a seleção funciona e o que esperar de cada etapa.",
+                "lessons": (
+                    {
+                        "title": "Boas-vindas à sua preparação",
+                        "description": "O que você vai encontrar nestas aulas.",
+                        "video_ref": _MOCK_FLOWER[0],
+                        "duration_seconds": _MOCK_FLOWER[1],
+                    },
+                    {
+                        "title": "Como é a prova do CEAP",
+                        "description": "Formato, duração e o que é avaliado.",
+                        "video_ref": _MOCK_FRIDAY[0],
+                        "duration_seconds": _MOCK_FRIDAY[1],
+                    },
+                    {
+                        "title": "Português e Matemática: o que cai",
+                        "description": "Os conteúdos que mais aparecem e por onde começar.",
+                        "video_ref": _MOCK_FLOWER[0],
+                        "duration_seconds": _MOCK_FLOWER[1],
+                    },
+                ),
+            },
+            {
+                "title": "Estratégias de estudo",
+                "description": "Como estudar de um jeito que cabe na sua rotina.",
+                "lessons": (
+                    {
+                        "title": "Montando sua rotina de estudos",
+                        "description": "Pouco tempo por dia, todo dia, rende mais que maratona.",
+                        "video_ref": _MOCK_FRIDAY[0],
+                        "duration_seconds": _MOCK_FRIDAY[1],
+                    },
+                    {
+                        "title": "Como aproveitar os simulados",
+                        "description": "Use o resultado para saber o que revisar.",
+                        "video_ref": _MOCK_FLOWER[0],
+                        "duration_seconds": _MOCK_FLOWER[1],
+                    },
+                    {
+                        "title": "Véspera e dia da prova",
+                        "description": "O que fazer (e o que não fazer) nas últimas horas.",
                         "video_ref": _MOCK_FRIDAY[0],
                         "duration_seconds": _MOCK_FRIDAY[1],
                     },

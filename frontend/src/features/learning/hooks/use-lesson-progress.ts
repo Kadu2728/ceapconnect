@@ -26,7 +26,7 @@ const SYNC_INTERVAL_MS = 10_000;
  *   ao terminar e ao sair da página, para não perder os últimos segundos.
  *
  * Ao cruzar o limiar de conclusão, invalida a visão geral do curso — o
- * dashboard da formação atualiza sem reload, como o brief pede.
+ * dashboard do curso atualiza sem reload, como o brief pede.
  */
 export function useLessonProgress(lessonId: string, courseSlug: string) {
   const queryClient = useQueryClient();
@@ -42,7 +42,7 @@ export function useLessonProgress(lessonId: string, courseSlug: string) {
       queryClient.invalidateQueries({ queryKey: LESSON_QUERY_KEY(lessonId) });
       if (result.just_completed) {
         toast.success("Aula concluída!", {
-          description: "Seu progresso na formação foi atualizado.",
+          description: "Seu progresso no curso foi atualizado.",
         });
       }
     },

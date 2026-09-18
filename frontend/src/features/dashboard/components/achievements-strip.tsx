@@ -2,6 +2,7 @@ import { Trophy } from "lucide-react";
 
 import { DashboardCard } from "@/features/dashboard/components/dashboard-card";
 import { InlineEmptyState } from "@/features/dashboard/components/inline-empty-state";
+import { SeeAllLink } from "@/features/dashboard/components/see-all-link";
 import type { DashboardAchievement } from "@/features/dashboard/types/dashboard.types";
 import { resolveAchievementIcon } from "@/features/dashboard/utils/achievement-icons";
 import { formatFullDate } from "@/features/dashboard/utils/date";
@@ -18,7 +19,14 @@ interface AchievementsStripProps {
 export function AchievementsStrip({ achievements }: AchievementsStripProps) {
   return (
     <DashboardCard>
-      <h2 className="text-base font-semibold">Conquistas recentes</h2>
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-base font-semibold">Conquistas recentes</h2>
+        <SeeAllLink
+          href="/conquistas"
+          label="Ver todas"
+          ariaLabel="Ver todas as conquistas"
+        />
+      </div>
 
       {achievements.length === 0 ? (
         <InlineEmptyState

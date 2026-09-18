@@ -35,7 +35,7 @@ export function CourseProgressCard({
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Progresso na formação"
+        aria-label="Progresso no curso"
         className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted"
       >
         <motion.div
@@ -48,7 +48,7 @@ export function CourseProgressCard({
 
       <p className="mt-3 text-sm text-muted-foreground">
         {isComplete ? (
-          <span className="font-medium text-success">Formação concluída — parabéns!</span>
+          <span className="font-medium text-success">Curso concluído — parabéns!</span>
         ) : (
           <>
             <span className="font-medium text-foreground">{completedLessons}</span> de{" "}

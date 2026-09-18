@@ -2,6 +2,7 @@ import { CalendarDays, MapPin } from "lucide-react";
 
 import { DashboardCard } from "@/features/dashboard/components/dashboard-card";
 import { InlineEmptyState } from "@/features/dashboard/components/inline-empty-state";
+import { SeeAllLink } from "@/features/dashboard/components/see-all-link";
 import type { DashboardEvent } from "@/features/dashboard/types/dashboard.types";
 import { formatEventDate } from "@/features/dashboard/utils/date";
 
@@ -13,7 +14,10 @@ interface UpcomingEventsListProps {
 export function UpcomingEventsList({ events }: UpcomingEventsListProps) {
   return (
     <DashboardCard>
-      <h2 className="text-base font-semibold">Próximos eventos</h2>
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-base font-semibold">Próximos eventos</h2>
+        <SeeAllLink href="/eventos" label="Ver todos" ariaLabel="Ver todos os eventos" />
+      </div>
 
       {events.length === 0 ? (
         <InlineEmptyState

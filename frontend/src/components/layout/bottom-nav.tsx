@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { visibleNavItems } from "@/components/layout/authenticated-nav-items";
+import {
+  isNavItemActive,
+  visibleNavItems,
+} from "@/components/layout/authenticated-nav-items";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { cn } from "@/lib/utils";
 
@@ -13,9 +16,11 @@ import { cn } from "@/lib/utils";
  * (16–25 anos): destinos de topo sempre a um toque, respeitando a safe-area
  * inferior. Máximo de 5 itens (regra `bottom-nav-limit`).
  *
- * Quando há mais destinos que o limite (ex.: admin com o item "Admin"), o
- * rodapé mobile mostra apenas os 5 primeiros — o painel Admin é desktop-first e
- * segue acessível pela navbar em telas maiores.
+ * Quando há mais destinos que o limite, o rodapé mobile mostra apenas os 5
+ * primeiros — a ordem de `AUTH_NAV_ITEMS` é a prioridade. Conquistas,
+ * Recompensas e Eventos ficam a um toque a partir do Dashboard (faixa de
+ * conquistas, próxima recompensa, próximos eventos); o painel Admin é
+ * desktop-first e segue acessível pela navbar em telas maiores.
  */
 const BOTTOM_NAV_LIMIT = 5;
 
@@ -32,7 +37,7 @@ export function BottomNav() {
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = isNavItemActive(item.href, pathname);
           const Icon = item.icon;
           return (
             <li key={item.href} className="flex-1">

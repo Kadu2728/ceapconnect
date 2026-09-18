@@ -5,7 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { CeapLogo } from "@/components/brand/ceap-logo";
-import { visibleNavItems } from "@/components/layout/authenticated-nav-items";
+import {
+  isNavItemActive,
+  visibleNavItems,
+} from "@/components/layout/authenticated-nav-items";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { AccessibilityMenu } from "@/features/accessibility/components/accessibility-menu";
@@ -57,7 +60,7 @@ export function AuthenticatedNavbar({
           className="hidden items-center gap-1 md:flex"
         >
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = isNavItemActive(item.href, pathname);
             return (
               <Link
                 key={item.href}

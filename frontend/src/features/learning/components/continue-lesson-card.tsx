@@ -11,33 +11,30 @@ import { formatDuration, formatTimestamp } from "@/features/learning/utils/video
 interface ContinueLessonCardProps {
   lesson: LessonSummary;
   lessonHref: (lessonId: string) => string;
-  /** Variante compacta para a home do responsável (sem o título de seção). */
-  compact?: boolean;
+  /**
+   * Título curto acima da aula — muda por público ("Continue sua formação"
+   * para o responsável, "Continue sua preparação" para o candidato).
+   */
+  eyebrow: string;
 }
 
 /**
- * "Continue sua formação" — a principal ação da página. Uma aula só, a que
+ * "Continue de onde parou" — a principal ação da página. Uma aula só, a que
  * vem a seguir: o princípio central do CEAP Connect (a pessoa sempre sabe
- * o próximo passo) aplicado à formação.
+ * o próximo passo) aplicado às videoaulas.
  */
 export function ContinueLessonCard({
   lesson,
   lessonHref,
-  compact = false,
+  eyebrow,
 }: ContinueLessonCardProps) {
   const isInProgress = lesson.status === "in_progress";
 
   return (
     <DashboardCard className="border-brand/25 bg-brand/[0.04]">
-      {!compact ? (
-        <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-          Continue sua formação
-        </p>
-      ) : (
-        <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-          Sua formação
-        </p>
-      )}
+      <p className="text-xs font-semibold uppercase tracking-wider text-brand">
+        {eyebrow}
+      </p>
 
       <h3 className="mt-2 text-lg font-semibold text-pretty">{lesson.title}</h3>
 

@@ -5,6 +5,7 @@ import {
   Gift,
   GraduationCap,
   LayoutDashboard,
+  MonitorPlay,
   ShieldCheck,
   Target,
   Trophy,
@@ -32,6 +33,7 @@ export const AUTH_NAV_ITEMS: AuthNavItem[] = [
   { href: "/dashboard", label: "Início", icon: LayoutDashboard },
   { href: "/documentos", label: "Documentos", icon: FileText },
   { href: "/simulados", label: "Simulados", icon: GraduationCap },
+  { href: "/aulas", label: "Aulas", icon: MonitorPlay },
   { href: "/missoes", label: "Missões", icon: Target },
   { href: "/conquistas", label: "Conquistas", icon: Trophy },
   { href: "/recompensas", label: "Recompensas", icon: Gift },
@@ -43,6 +45,16 @@ export const AUTH_NAV_ITEMS: AuthNavItem[] = [
 interface VisibilityContext {
   isAdmin: boolean;
   role: UserRole;
+}
+
+/**
+ * Um item está ativo na própria rota e nas filhas dela (`/aulas` continua
+ * aceso em `/aulas/<id>`), para a pessoa não perder a referência de onde
+ * está ao abrir uma aula. Nenhum `href` é prefixo de outro, então o
+ * `startsWith` com a barra é seguro.
+ */
+export function isNavItemActive(href: string, pathname: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 /**

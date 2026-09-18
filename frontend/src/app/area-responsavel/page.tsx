@@ -48,9 +48,9 @@ export default function AreaResponsavelPage() {
               e um erro secundário não pode esconder o conteúdo principal. */}
           {nextLesson ? (
             <ContinueLessonCard
+              eyebrow="Sua formação"
               lesson={nextLesson}
               lessonHref={GUARDIAN_LEARNING_ROUTES.lesson}
-              compact
             />
           ) : null}
 
