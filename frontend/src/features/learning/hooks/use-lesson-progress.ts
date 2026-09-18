@@ -32,6 +32,7 @@ export function useLessonProgress(lessonId: string, courseSlug: string) {
   const queryClient = useQueryClient();
   const lastSentAtRef = useRef(0);
   const lastPositionRef = useRef(0);
+  const lastSentPositionRef = useRef(-1);
 
   const mutation = useMutation({
     mutationFn: (positionSeconds: number) =>
@@ -46,12 +47,15 @@ export function useLessonProgress(lessonId: string, courseSlug: string) {
       }
     },
     // Silencioso de propósito: uma falha de sincronização não pode
-    // interromper o vídeo. A próxima gravação tenta de novo.
-    onError: () => undefined,
+    // interromper o vídeo. Libera a deduplicação para a próxima gravação
+    // (mesmo na mesma posição) tentar de novo — senão um flush que falhou ao
+    // pausar aos 5s nunca seria repetido ao fechar a aba nos mesmos 5s.
+    onError: () => {
+      lastSentPositionRef.current = -1;
+    },
   });
 
   const { mutate } = mutation;
-  const lastSentPositionRef = useRef(-1);
 
   // Grava só se a posição inteira mudou desde a última gravação. O `<video>`
   // dispara `pause` e `ended` em sequência ao terminar — sem isso, dois

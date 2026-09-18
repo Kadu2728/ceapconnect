@@ -16,7 +16,7 @@ from app.models.user import ROLE_CANDIDATE, ROLE_GUARDIAN, User
 from app.repositories.user_repository import UserRepository
 from app.services import learning_service
 
-_MOCK_VIDEO = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+_MOCK_VIDEO = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
 
 
 async def _course(
